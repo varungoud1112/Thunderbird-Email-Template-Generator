@@ -569,47 +569,15 @@ document.getElementById("output").innerHTML = template;
 
 }
 
-async function copyTemplate(){
+async function copyTemplate() {
+    let output = document.getElementById("output").innerText;
 
-let output = document.getElementById("output");
-
-let htmlContent = output.innerHTML;
-
-let textContent = output.innerText;
-
-try{
-
-await navigator.clipboard.write([
-
-new ClipboardItem({
-
-"text/html": new Blob([htmlContent], { type: "text/html" }),
-
-"text/plain": new Blob([textContent], { type: "text/plain" })
-
-})
-
-]);
-
-alert("Template Copied Successfully");
-
-}
-
-catch(err){
-
-alert("Copy Failed");
-
-}
-
-}
-window.onclick = function(event){
-
-if(!event.target.matches('#courseSearch')){
-
-document.getElementById("courseDropdown").style.display = "none";
-
-}
-
+    try {
+        await navigator.clipboard.writeText(output);
+        alert("Template Copied Successfully");
+    } catch (err) {
+        alert("Copy Failed");
+    }
 }
 
 </script>
