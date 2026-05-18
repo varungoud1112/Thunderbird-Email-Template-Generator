@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title> Email Generator</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Calibri, Arial, sans-serif;
+    background:#eef2f7;
+    padding:30px;
+}
+
+.container{
+    max-width:1400px;
+    margin:auto;
+    background:#ffffff;
+    border-radius:16px;
+    box-shadow:0 5px 20px rgba(0,0,0,0.08);
+    overflow:hidden;
+}
+
+.header{
+    background:#0078d4;
+    color:#fff;
+    padding:20px 30px;
+    font-size:28px;
+    font-weight:bold;
+}
+
+.main{
+    display:flex;
+    gap:25px;
+    padding:25px;
+}
+
+.left-panel{
+    width:420px;
+    background:#f8fbff;
+    padding:25px;
+    border-radius:12px;
+    border:1px solid #dbe7f3;
+}
+
+.right-panel{
+    flex:1;
+    background:#ffffff;
+    padding:25px;
+    border-radius:12px;
+    border:1px solid #dbe7f3;
+}
+
+.section-title{
+    font-size:20px;
+    font-weight:bold;
+    margin-bottom:20px;
+    color:#1d3557;
+}
+
+label{
+    display:block;
+    margin-bottom:8px;
+    font-weight:bold;
+    color:#333;
+    font-size:14px;
+}
+
+input,
+select{
+    width:100%;
+    padding:12px 14px;
+    margin-bottom:18px;
+    border:1px solid #cfd9e3;
+    border-radius:8px;
+    font-size:15px;
+    background:#fff;
+}
+
+input:focus,
+select:focus{
+    outline:none;
+    border-color:#0078d4;
+    box-shadow:0 0 0 3px rgba(0,120,212,0.15);
+}
+
+.course-dropdown{
+    width:100%;
+    max-height:260px;
+    overflow-y:auto;
+    border:1px solid #cfd9e3;
+    border-radius:8px;
+    background:#fff;
+    display:none;
+    margin-top:-10px;
+    margin-bottom:18px;
+}
+
+.course-item{
+    padding:12px 14px;
+    cursor:pointer;
+    border-bottom:1px solid #eee;
+    font-size:15px;
+    transition:0.2s;
+}
+
+.course-item:hover{
+    background:#eaf4ff;
+}
+
+.button-group{
+    display:flex;
+    gap:12px;
+    margin-top:10px;
+}
+
+button{
+    flex:1;
+    padding:14px;
+    border:none;
+    border-radius:8px;
+    font-size:15px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.generate-btn{
+    background:#0078d4;
+    color:#fff;
+}
+
+.generate-btn:hover{
+    background:#005fa3;
+}
+
+.copy-btn{
+    background:#28a745;
+    color:#fff;
+}
+
+.copy-btn:hover{
+    background:#1f7f35;
+}
+
+.output-title{
+    font-size:20px;
+    font-weight:bold;
+    margin-bottom:20px;
+    color:#1d3557;
+}
+
+#output{
+    min-height:650px;
+    padding:25px;
+    border:1px solid #d7e1eb;
+    border-radius:10px;
+    background:#fafcff;
+    font-size:15px;
+    line-height:1.8;
+    color:#000;
+    white-space:pre-line;
+}
+
+@media(max-width:1000px){
+
+.main{
+    flex-direction:column;
+}
+
+.left-panel{
+    width:100%;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+Email Template Generator
+</div>
+
+<div class="main">
+
+<div class="left-panel">
+
+<div class="section-title">
+Input Details
+</div>
+
+<label>Customer Name</label>
+
+<input type="text" id="customer" placeholder="Enter Customer Name">
+
+<label>Select Course</label>
+
+<input 
+type="text"
+id="courseSearch"
+placeholder="Select Course"
+autocomplete="off"
+onclick="showDropdown()"
+onkeyup="filterCourses()"
+>
+
+<div id="courseDropdown" class="course-dropdown">
+
+<div class="course-item" onclick="selectCourse(this)">Certified Scrum Master (CSM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Scrum Product Owner (CSPO) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Advanced Certified Scrum Master (A-CSM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Advanced Certified Scrum Product Owner (A-CSPO) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Scrum Developer (CSD) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Agile and Scrum Training</div>
+<div class="course-item" onclick="selectCourse(this)">PMI-Agile Certified Practitioner (PMI-ACP) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum Master (PSM I) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Agile Scaling Practitioner 1 (CASP 1) Training</div>
+<div class="course-item" onclick="selectCourse(this)">Agile Coaching Skills - Certified Facilitator (CAF) Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum Master Advanced (PSM A) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Agile Leader 1 (CAL 1) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Advanced Certified Scrum Developer (A-CSD) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Certified Professional in Agile Coaching (ICP-ACC) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum with Kanban (PSK) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum Product Owner I (PSPO) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum Developer (PSD) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Scrum Professional - ScrumMaster (CSP-SM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Agile Leader 2 (CAL 2) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum Product Owner (PSPO) - Advanced Course</div>
+<div class="course-item" onclick="selectCourse(this)">Scrum@Scale Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Coaching Agile Transformations (ICP-CAT) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Agile Leadership Essentials (PAL-E) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Behaviour Driven Development (BDD) Training</div>
+<div class="course-item" onclick="selectCourse(this)">Test Driven Development (TDD) Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Agility in the Enterprise (ICP-ENT) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile(ICP) Fundamental Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Agile Fundamentals : Including Scrum and Kanban Training</div>
+<div class="course-item" onclick="selectCourse(this)">Manage Agile Projects Using Scrum Training</div>
+<div class="course-item" onclick="selectCourse(this)">Agile for Executives Training</div>
+<div class="course-item" onclick="selectCourse(this)">Agile for Managers Training</div>
+<div class="course-item" onclick="selectCourse(this)">Agile Product Owner Training</div>
+<div class="course-item" onclick="selectCourse(this)">Applying Professional Scrum (APS) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Agile Release Planning Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Scrum Professional - Product Owner (CSP-PO) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Agile Project Management Training</div>
+<div class="course-item" onclick="selectCourse(this)">Jira Software Training for Agile Projects</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Agile Leadership (ICP-LEA) Certification Course Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Product Management (ICP-PDM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Agile Project & Delivery Management (ICP-APM) Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum Product Backlog Management (PSPBM) Skills Certification Course</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Agile Product Ownership (ICP-APO) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Applying Professional Kanban(APK) Course</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Agile Team Facilitation Certification (ICP-ATF) Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Foundations of AI (ICP-FAI) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Lean Portfolio Management (ICP-LPM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile People Development (ICP-PDV) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Systems Coaching (ICP-SYS) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Business Agility Foundations (ICP-BAF) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum Master-AI Essentials (PSM-AI) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum Product Owner-AI Essentials (PSPO-AI Essentials) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Adaptive Org Design (ICP-ORG) Certification Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">AI-Empowered Leading SAFe 6.0 Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">AI-Empowered SAFe 6.0 Scrum Master (SSM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">AI-Empowered SAFe 6.0 Product Owner/Product Manager (POPM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">AI-Empowered SAFe 6.0 Practice Consultant (SPC) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">SAFe 6.0 Lean Portfolio Management (LPM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">SAFe 6.0 Architects Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">AI-Empowered SAFe 6.0 for Teams Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">AI-Empowered Advanced SAFe Practice Consultant (ASPC) Certification Path</div>
+<div class="course-item" onclick="selectCourse(this)">AI-Empowered SAFe 6.0 Release Train Engineer (RTE) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">SAFe 6.0 DevOps Certification Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">Project Management Professional (PMP) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Project Management Techniques Training</div>
+<div class="course-item" onclick="selectCourse(this)">PRINCE2 Foundation and Practitioner Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">PRINCE2 Foundation Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">PRINCE2 Practitioner Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Associate in Project Management (CAPM) Certification Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">Business Case Writing Training</div>
+<div class="course-item" onclick="selectCourse(this)">Conflict Management Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Business Analysis Professional (CBAP) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Change Management Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">Generative AI for Scrum Masters Training</div>
+<div class="course-item" onclick="selectCourse(this)">Prompt Engineering Course</div>
+<div class="course-item" onclick="selectCourse(this)">Agentic AI Foundation Training Course</div>
+
+<div class="course-item" onclick="selectCourse(this)">Lean Six Sigma Green Belt Training</div>
+<div class="course-item" onclick="selectCourse(this)">Lean Six Sigma Black Belt Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">ITIL 4 Foundation Certification Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">DevOps Foundation Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Docker and Kubernetes Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">AWS DevOps Engineer Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">AWS Cloud Practitioner Certification Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">Data Science With Python Training</div>
+<div class="course-item" onclick="selectCourse(this)">Artificial Intelligence (AI) Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">Angular JS Training</div>
+<div class="course-item" onclick="selectCourse(this)">React JS Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">Python Programming Training</div>
+<div class="course-item" onclick="selectCourse(this)">Microsoft Power BI Training</div>
+<div class="course-item" onclick="selectCourse(this)">Microsoft Azure Fundamentals AZ-900 Certification Training</div>
+
+</div>
+<label>Select Sales Person</label>
+
+<select id="sales">
+
+<option value="">Select Sales Person</option>
+
+<option value="Sampoorna">Sampoorna</option>
+<option value="Ahamed">Ahamed</option>
+<option value="Vaibhav">Vaibhav</option>
+<option value="Debendra">Debendra</option>
+<option value="Sushma">Sushma</option>
+<option value="Yash">Yash</option>
+<option value="Abhishek">Abhishek</option>
+<option value="Vidya">Vidya</option>
+<option value="Akhilesh">Akhilesh</option>
+<option value="Sunil">Sunil</option>
+
+</select>
+
+<label>Select Region</label>
+
+<select id="region">
+
+<option value="india">India / APC Region</option>
+
+<option value="mea">MEA / Europe Region</option>
+
+<option value="usa">USA Region</option>
+
+</select>
+
+<div class="button-group">
+
+<button class="generate-btn" onclick="generateTemplate()">
+Generate Template
+</button>
+
+<button class="copy-btn" onclick="copyTemplate()">
+Copy Template
+</button>
+
+</div>
+
+</div>
+
+<div class="right-panel">
+
+<div class="output-title">
+Generated Email Template
+</div>
+
+<div id="output">
+Your generated template will appear here...
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+function showDropdown(){
+
+document.getElementById("courseDropdown").style.display = "block";
+
+}
+
+function filterCourses(){
+
+let input = document.getElementById("courseSearch").value.toLowerCase();
+
+let items = document.getElementsByClassName("course-item");
+
+document.getElementById("courseDropdown").style.display = "block";
+
+for(let i = 0; i < items.length; i++){
+
+let txt = items[i].innerText.toLowerCase();
+
+if(txt.includes(input)){
+
+items[i].style.display = "block";
+
+}
+else{
+
+items[i].style.display = "none";
+
+}
+
+}
+
+}
+
+function selectCourse(element){
+
+document.getElementById("courseSearch").value = element.innerText;
+
+document.getElementById("courseDropdown").style.display = "none";
+
+}
+
+function generateTemplate(){
+
+let customer = document.getElementById("customer").value;
+
+let course = document.getElementById("courseSearch").value;
+
+let sales = document.getElementById("sales").value;
+
+let region = document.getElementById("region").value;
+
+let signature = "";
+
+if(region === "india"){
+
+signature = `Regards,
+<b>Team Support</b>
+<b>Business Manager</b>
+<b>+91 9611723780 | +61-272025160</b>
+`;
+
+}
+
+else if(region === "mea"){
+
+signature = `Regards,
+<b>Team Support</b>
+<b>Business Manager</b>
+<b>+44-1414890048 | +91 9611710069</b>
+`;
+
+}
+
+else if(region === "usa"){
+
+signature = `Regards,
+<b>Team Support</b>
+<b>USA - +1-361-998-9988</b>
+<b>CAN - +1-249-500-3143</b>
+`;
+
+}
+let template = `Hi ${customer},
+
+Greetings!
+
+Thank you for your interest shown for our <b>${course}</b>.
+
+Your query is being forwarded to my colleague <b>${sales} (In cc)</b> who will be providing you with all the necessary information. Meanwhile, please share the below information so that we could assist you accordingly.
+
+1. Participant count:
+2. Preferred dates:
+3. Private/Public session:
+4. Contact number:
+
+@${sales} - Please share the information and do the needful.
+
+${signature}
+`;
+
+document.getElementById("output").innerHTML = template;
+
+}
+
+async function copyTemplate(){
+
+let output = document.getElementById("output").innerText;
+
+try{
+
+await navigator.clipboard.writeText(output);
+
+alert("Template Copied Successfully");
+
+}
+catch(err){
+
+alert("Copy Failed");
+
+}
+
+}
+
+window.onclick = function(event){
+
+if(!event.target.matches('#courseSearch')){
+
+document.getElementById("courseDropdown").style.display = "none";
+
+}
+
+}
+
+</script>
+
+</body>
+
+</html>
