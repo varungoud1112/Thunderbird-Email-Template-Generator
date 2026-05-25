@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Email Generator</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Calibri, Arial, sans-serif;
+    background:#eef2f7;
+    padding:30px;
+}
+
+.container{
+    max-width:1400px;
+    margin:auto;
+    background:#ffffff;
+    border-radius:16px;
+    box-shadow:0 5px 20px rgba(0,0,0,0.08);
+    overflow:hidden;
+    position:relative;
+}
+
+.header{
+    background:#0078d4;
+    color:#fff;
+    padding:18px 25px;
+    font-size:24px;
+    font-weight:bold;
+    text-align:center;
+    position:relative;
+}
+
+/* Small Admin Button - Top Right Corner */
+.admin-btn{
+    position:absolute;
+    right:20px;
+    top:50%;
+    transform:translateY(-50%);
+    background:rgba(255,255,255,0.2);
+    color:#fff;
+    border:1px solid rgba(255,255,255,0.4);
+    padding:4px 12px;
+    border-radius:4px;
+    font-size:12px;
+    font-weight:normal;
+    cursor:pointer;
+    transition:all 0.2s;
+    letter-spacing:0.5px;
+}
+
+.admin-btn:hover{
+    background:rgba(255,255,255,0.3);
+    transform:translateY(-50%) scale(1.02);
+}
+
+.main{
+    display:flex;
+    gap:25px;
+    padding:25px;
+}
+
+.left-panel{
+    width:420px;
+    background:#f8fbff;
+    padding:25px;
+    border-radius:12px;
+    border:1px solid #dbe7f3;
+}
+
+.right-panel{
+    flex:1;
+    background:#ffffff;
+    padding:25px;
+    border-radius:12px;
+    border:1px solid #dbe7f3;
+}
+
+.section-title{
+    font-size:20px;
+    font-weight:bold;
+    margin-bottom:20px;
+    color:#1d3557;
+}
+
+label{
+    display:block;
+    margin-bottom:8px;
+    font-weight:bold;
+    color:#333;
+    font-size:14px;
+}
+
+.input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+input,
+select{
+    width:100%;
+    padding:12px 14px;
+    margin-bottom:18px;
+    border:1px solid #cfd9e3;
+    border-radius:8px;
+    font-size:15px;
+    background:#fff;
+}
+
+.course-input-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 18px;
+}
+
+.course-input-wrapper input {
+    width: 100%;
+    padding:12px 35px 12px 14px;
+    margin-bottom: 0;
+}
+
+.clear-course-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+    z-index: 10;
+}
+
+.clear-course-btn:hover {
+    background: #c82333;
+    transform: translateY(-50%) scale(1.1);
+}
+
+input:focus,
+select:focus{
+    outline:none;
+    border-color:#0078d4;
+    box-shadow:0 0 0 3px rgba(0,120,212,0.15);
+}
+
+.course-dropdown{
+    width:100%;
+    max-height:260px;
+    overflow-y:auto;
+    border:1px solid #cfd9e3;
+    border-radius:8px;
+    background:#fff;
+    display:none;
+    margin-top:5px;
+    margin-bottom:0;
+    position:relative;
+    z-index:100;
+}
+
+.course-item{
+    padding:12px 14px;
+    cursor:pointer;
+    border-bottom:1px solid #eee;
+    font-size:15px;
+}
+
+.course-item:hover{
+    background:#eaf4ff;
+}
+
+.course-item.selected {
+    background: #0078d4;
+    color: white;
+}
+
+.button-group{
+    display:flex;
+    gap:12px;
+    margin-top:10px;
+}
+
+button{
+    flex:1;
+    padding:14px;
+    border:none;
+    border-radius:8px;
+    font-size:15px;
+    font-weight:bold;
+    cursor:pointer;
+    transition: transform 0.1s ease;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+.generate-btn{
+    background:#0078d4;
+    color:#fff;
+}
+
+.generate-btn:hover{
+    background:#005a9e;
+}
+
+.copy-btn{
+    background:#28a745;
+    color:#fff;
+}
+
+.copy-btn:hover{
+    background:#1e7e34;
+}
+
+#output{
+    min-height:650px;
+    padding:25px;
+    border:1px solid #d7e1eb;
+    border-radius:10px;
+    background:#fff;
+    font-size:16px;
+    line-height:1.8;
+    color:#000;
+}
+
+/* Toast Message - Below Buttons */
+.toast-message{
+    position: relative;
+    margin-top: 15px;
+    background: #28a745;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+}
+
+.toast-message.show{
+    opacity: 1;
+    visibility: visible;
+}
+
+.toast-message span:first-child {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.toast-message span:last-child {
+    font-size: 14px;
+}
+
+/* Admin Portal Styles - Compact */
+.admin-portal{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.5);
+    z-index:1000;
+    justify-content:center;
+    align-items:center;
+}
+
+.admin-content{
+    background:#fff;
+    border-radius:12px;
+    width:500px;
+    max-width:90%;
+    max-height:80%;
+    overflow:hidden;
+    box-shadow:0 5px 20px rgba(0,0,0,0.2);
+}
+
+.admin-header{
+    background:#0078d4;
+    color:#fff;
+    padding:10px 18px;
+    font-size:14px;
+    font-weight:bold;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.close-admin{
+    background:transparent;
+    color:#fff;
+    border:1px solid #fff;
+    padding:2px 8px;
+    border-radius:3px;
+    cursor:pointer;
+    font-size:11px;
+    width:auto;
+}
+
+.close-admin:hover{
+    background:#fff;
+    color:#0078d4;
+}
+
+.admin-body{
+    padding:15px;
+    max-height:calc(80vh - 45px);
+    overflow-y:auto;
+}
+
+.add-sales-section{
+    background:#f8fbff;
+    padding:12px;
+    border-radius:8px;
+    margin-bottom:15px;
+    border:1px solid #dbe7f3;
+}
+
+.add-sales-section h3{
+    margin-bottom:8px;
+    font-size:13px;
+    color:#1d3557;
+}
+
+.form-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:8px;
+}
+
+.form-row input{
+    flex:2;
+    padding:6px 8px;
+    font-size:12px;
+    margin-bottom:0;
+}
+
+.form-row select{
+    flex:1;
+    padding:6px 8px;
+    font-size:12px;
+    margin-bottom:0;
+}
+
+.add-btn{
+    background:#28a745;
+    color:#fff;
+    padding:6px;
+    font-size:12px;
+    width:100%;
+}
+
+.sales-list-section{
+    background:#fff;
+    border:1px solid #dbe7f3;
+    border-radius:6px;
+    overflow:hidden;
+}
+
+.sales-list-header{
+    background:#e8f0fe;
+    padding:8px 10px;
+    font-weight:bold;
+    color:#1d3557;
+    font-size:11px;
+    display:grid;
+    grid-template-columns:2fr 1.5fr 0.8fr;
+    border-bottom:1px solid #dbe7f3;
+}
+
+.sales-list-container{
+    max-height:250px;
+    overflow-y:auto;
+}
+
+.sales-row{
+    padding:6px 10px;
+    display:grid;
+    grid-template-columns:2fr 1.5fr 0.8fr;
+    align-items:center;
+    border-bottom:1px solid #eee;
+    font-size:12px;
+}
+
+.sales-row:hover{
+    background:#f8fbff;
+}
+
+.sales-name{
+    font-weight:bold;
+    color:#333;
+    font-size:12px;
+}
+
+.region-badge{
+    display:inline-block;
+    padding:2px 6px;
+    border-radius:8px;
+    font-size:10px;
+    font-weight:bold;
+}
+
+.region-india{
+    background:#e3f2fd;
+    color:#1976d2;
+}
+
+.region-mea{
+    background:#fff3e0;
+    color:#f57c00;
+}
+
+.region-usa{
+    background:#e8f5e9;
+    color:#388e3c;
+}
+
+.delete-sales-btn{
+    background:#dc3545;
+    color:#fff;
+    border:none;
+    padding:3px 6px;
+    border-radius:3px;
+    cursor:pointer;
+    font-size:10px;
+    width:50px;
+}
+
+.delete-sales-btn:hover{
+    background:#c82333;
+}
+
+.empty-list{
+    text-align:center;
+    padding:25px;
+    color:#999;
+    font-size:12px;
+    font-style:italic;
+}
+
+.region-info{
+    background:#e8f0fe;
+    padding:10px;
+    border-radius:6px;
+    margin-top:10px;
+    margin-bottom:18px;
+    font-size:13px;
+    color:#1d3557;
+    border-left:3px solid #0078d4;
+}
+
+.region-info strong{
+    color:#0078d4;
+}
+
+.stats{
+    display:flex;
+    gap:8px;
+    margin-bottom:12px;
+    padding:8px;
+    background:#f0f7ff;
+    border-radius:6px;
+}
+
+.stat-box{
+    flex:1;
+    text-align:center;
+}
+
+.stat-number{
+    font-size:16px;
+    font-weight:bold;
+    color:#0078d4;
+}
+
+.stat-label{
+    font-size:9px;
+    color:#666;
+    margin-top:2px;
+}
+
+@media(max-width:1000px){
+
+.main{
+    flex-direction:column;
+}
+
+.left-panel{
+    width:100%;
+}
+
+.form-row{
+    flex-direction:column;
+}
+
+.form-row input,
+.form-row select{
+    margin-bottom:5px;
+}
+
+.admin-btn{
+    font-size:11px;
+    padding:3px 10px;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+Email Template Generator
+<button class="admin-btn" onclick="openAdminPortal()">⚙️ Admin</button>
+</div>
+
+<div class="main">
+
+<div class="left-panel">
+
+<div class="section-title">
+Input Details
+</div>
+
+<label>Customer Name</label>
+<input type="text" id="customer" placeholder="Enter Customer Name">
+
+<label>Select Course</label>
+<div class="course-input-wrapper">
+    <input 
+    type="text"
+    id="courseSearch"
+    placeholder="Type course name (CSPO, PMP, etc.)"
+    autocomplete="off"
+    onclick="handleInputClick()"
+    onkeyup="filterCourses()"
+    oninput="handleInputChange()"
+    onkeydown="handleKeyNavigation(event)"
+    >
+    <button class="clear-course-btn" id="clearCourseBtn" onclick="clearCourseInput()" title="Clear course">×</button>
+</div>
+
+<div id="courseDropdown" class="course-dropdown">
+<div class="course-item" onclick="selectCourse(this)">Certified Scrum Master (CSM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Scrum Product Owner (CSPO) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Advanced Certified Scrum Master (A-CSM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Advanced Certified Scrum Product Owner (A-CSPO) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Scrum Developer (CSD) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Agile and Scrum Training</div>
+<div class="course-item" onclick="selectCourse(this)">PMI-Agile Certified Practitioner (PMI-ACP) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum Master (PSM I) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Agile Scaling Practitioner 1 (CASP 1) Training</div>
+<div class="course-item" onclick="selectCourse(this)">Agile Coaching Skills - Certified Facilitator (CAF) Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum Master Advanced (PSM A) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Agile Leader 1 (CAL 1) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Advanced Certified Scrum Developer (A-CSD) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Certified Professional in Agile Coaching (ICP-ACC) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum with Kanban (PSK) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum Product Owner I (PSPO) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum Developer (PSD) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Scrum Professional - ScrumMaster (CSP-SM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Agile Leader 2 (CAL 2) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum Product Owner (PSPO) - Advanced Course</div>
+<div class="course-item" onclick="selectCourse(this)">Scrum@Scale Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Coaching Agile Transformations (ICP-CAT) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Agile Leadership Essentials (PAL-E) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Behaviour Driven Development (BDD) Training</div>
+<div class="course-item" onclick="selectCourse(this)">Test Driven Development (TDD) Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Agility in the Enterprise (ICP-ENT) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile(ICP) Fundamental Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Agile Fundamentals : Including Scrum and Kanban Training</div>
+<div class="course-item" onclick="selectCourse(this)">Manage Agile Projects Using Scrum Training</div>
+<div class="course-item" onclick="selectCourse(this)">Agile for Executives Training</div>
+<div class="course-item" onclick="selectCourse(this)">Agile for Managers Training</div>
+<div class="course-item" onclick="selectCourse(this)">Agile Product Owner Training</div>
+<div class="course-item" onclick="selectCourse(this)">Applying Professional Scrum (APS) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Agile Release Planning Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Scrum Professional - Product Owner (CSP-PO) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Agile Project Management Training</div>
+<div class="course-item" onclick="selectCourse(this)">Jira Software Training for Agile Projects</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Agile Leadership (ICP-LEA) Certification Course Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Product Management (ICP-PDM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Agile Project & Delivery Management (ICP-APM) Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum Product Backlog Management (PSPBM) Skills Certification Course</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Agile Product Ownership (ICP-APO) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Applying Professional Kanban(APK) Course</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Agile Team Facilitation Certification (ICP-ATF) Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Foundations of AI (ICP-FAI) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Lean Portfolio Management (ICP-LPM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile People Development (ICP-PDV) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Systems Coaching (ICP-SYS) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Business Agility Foundations (ICP-BAF) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum Master-AI Essentials (PSM-AI) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Professional Scrum Product Owner-AI Essentials (PSPO-AI Essentials) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile Adaptive Org Design (ICP-ORG) Certification Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">AI-Empowered Leading SAFe 6.0 Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">AI-Empowered SAFe 6.0 Scrum Master (SSM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">AI-Empowered SAFe 6.0 Product Owner/Product Manager (POPM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">AI-Empowered SAFe 6.0 Practice Consultant (SPC) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">SAFe 6.0 Lean Portfolio Management (LPM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">SAFe 6.0 Architects Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">AI-Empowered SAFe 6.0 for Teams Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">AI-Empowered Advanced SAFe Practice Consultant (ASPC) Certification Path</div>
+<div class="course-item" onclick="selectCourse(this)">AI-Empowered SAFe 6.0 Release Train Engineer (RTE) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">SAFe 6.0 DevOps Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Advanced Facilitator: Conflict & Collaboration Micro-Credential Course</div>
+<div class="course-item" onclick="selectCourse(this)">SAFe 6.0 Agile Product Management (APM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">SAFe 5.0 Agile Software Engineering Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Advanced Facilitator: Value Stream Mapping Micro-Credential Course</div>
+<div class="course-item" onclick="selectCourse(this)">Achieving Responsible AI with SAFe Micro-credential Course</div>
+<div class="course-item" onclick="selectCourse(this)">Agile HR Explorer (AHRE) Training and Certification</div>
+<div class="course-item" onclick="selectCourse(this)">AI-Empowered SAFe Advanced Scrum Master Certification Path</div>
+<div class="course-item" onclick="selectCourse(this)">SAFe for Hardware Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">AI-Native Foundations Certification Training Course</div>
+<div class="course-item" onclick="selectCourse(this)">AI-Native Change Agent Certification Training Course</div>
+
+<div class="course-item" onclick="selectCourse(this)">Project Management Professional (PMP) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Project Management Techniques Training</div>
+<div class="course-item" onclick="selectCourse(this)">PRINCE2 Foundation and Practitioner Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">PRINCE2 Foundation Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">PRINCE2 Practitioner Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Associate in Project Management (CAPM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">PRINCE2 Agile Foundation Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Primavera P6 v 20.12 Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">PRINCE2 Agile Practitioner Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">PRINCE2 Agile Foundation and Practitioner Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Program Management Professional (PgMP) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Project Management Fundamental Training</div>
+<div class="course-item" onclick="selectCourse(this)">Portfolio Management Professional (PfMP) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Disciplined Agile Foundations (DAF) Training</div>
+<div class="course-item" onclick="selectCourse(this)">PMI-CPMAI Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Primavera P6 Professional Fundamentals Certification Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">Business Case Writing Training</div>
+<div class="course-item" onclick="selectCourse(this)">Conflict Management Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Business Analysis Professional (CBAP) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Change Management Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certification of Capability in Business Analysis (CCBA) Training</div>
+<div class="course-item" onclick="selectCourse(this)">Entry Certificate in Business Analysis (ECBA) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Design Thinking Training</div>
+<div class="course-item" onclick="selectCourse(this)">Agile Analysis Certification (IIBA-AAC) Certification Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">Generative AI for Business & IT Leaders & Managers Training</div>
+<div class="course-item" onclick="selectCourse(this)">Generative AI for Business Analysts & Functional IT Consultants Training</div>
+<div class="course-item" onclick="selectCourse(this)">Cloud Fundamentals for Business Managers & Product Managers Training</div>
+<div class="course-item" onclick="selectCourse(this)">Generative AI Architect - Advanced Program Training</div>
+<div class="course-item" onclick="selectCourse(this)">Multi-cloud FinOps: AWS, GCP, Azure</div>
+<div class="course-item" onclick="selectCourse(this)">Introduction to Generative AI Training</div>
+<div class="course-item" onclick="selectCourse(this)">Generative AI for Agile Leaders Training</div>
+<div class="course-item" onclick="selectCourse(this)">Generative AI for Scrum Masters Training</div>
+<div class="course-item" onclick="selectCourse(this)">Generative AI in HR Certification Course</div>
+<div class="course-item" onclick="selectCourse(this)">Generative AI for Software Developers Course</div>
+<div class="course-item" onclick="selectCourse(this)">Generative AI for Project Managers Training</div>
+<div class="course-item" onclick="selectCourse(this)">Prompt Engineering Course</div>
+<div class="course-item" onclick="selectCourse(this)">Generative AI for Product Owners/Product Managers Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Mastering Generative AI Tools Online</div>
+<div class="course-item" onclick="selectCourse(this)">Agentic AI Foundation Training Course</div>
+<div class="course-item" onclick="selectCourse(this)">Agentic AI Practitioner Training Course</div>
+<div class="course-item" onclick="selectCourse(this)">Claude Certified Architect – Foundations (CCA-F) Training Course</div>
+<div class="course-item" onclick="selectCourse(this)">AI For CXOs Workshop</div>
+<div class="course-item" onclick="selectCourse(this)">Agentic AI Engineering with Anthropic Claude Technologies Training Course</div>
+<div class="course-item" onclick="selectCourse(this)">Generative AI for Scrum Masters Training</div>
+<div class="course-item" onclick="selectCourse(this)">Prompt Engineering Course</div>
+<div class="course-item" onclick="selectCourse(this)">Agentic AI Foundation Training Course</div>
+
+<div class="course-item" onclick="selectCourse(this)">Agile Objectives and Key Results (Agile OKRs) MicroCredential Training</div>
+<div class="course-item" onclick="selectCourse(this)">AI for Scrum Masters Micro-credential Course</div>
+<div class="course-item" onclick="selectCourse(this)">AI for Product Owners Micro-credential Training</div>
+<div class="course-item" onclick="selectCourse(this)">Scrum Essentials</div>
+<div class="course-item" onclick="selectCourse(this)">Conflict Management Skills Course</div>
+<div class="course-item" onclick="selectCourse(this)">Scrum Better with Kanban (SBK) Micro-credential Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile AI for Product Planning Micro-credential Course Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile AI for Product Metrics Micro Credential Course Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile AI for Stakeholder Management Micro Credential Course Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile AI for Product Discovery Micro Credential Course Training</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile AI for Product Strategy Micro-Credential Course</div>
+<div class="course-item" onclick="selectCourse(this)">ICAgile AI for Customer Insights Micro-credential Training</div>
+<div class="course-item" onclick="selectCourse(this)">UX and Design for Agile Teams Micro-credential Course</div>
+<div class="course-item" onclick="selectCourse(this)">Agile Coaching Skills Micro-credential Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">Six Sigma Fundamentals Training</div>
+<div class="course-item" onclick="selectCourse(this)">Lean Six Sigma Yellow Belt Training</div>
+<div class="course-item" onclick="selectCourse(this)">Lean Six Sigma Green Belt Training</div>
+<div class="course-item" onclick="selectCourse(this)">Lean Six Sigma Black Belt Training</div>
+<div class="course-item" onclick="selectCourse(this)">Root Cause Analysis (RCA) Training</div>
+<div class="course-item" onclick="selectCourse(this)">Lean Six Sigma Yellow Belt Training - 8 Hours Crash Course</div>
+    
+<div class="course-item" onclick="selectCourse(this)">ITIL 4 Foundation Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">ITIL 5 Foundation Certification Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">DevOps Foundation Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Docker and Kubernetes Training</div>
+<div class="course-item" onclick="selectCourse(this)">Continuous Testing Foundation (CTF) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Continuous Delivery Ecosystem Foundation (CDEF) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">DevSecOps Foundation Certification Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">AWS SysOps Administrator Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">AWS DevOps Engineer Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">AWS Cloud Practitioner Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">AWS Certified Solutions Architect Professional Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Cloud Computing with AWS Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">Data Science With Python Training</div>
+<div class="course-item" onclick="selectCourse(this)">Python Django (PD) Training</div>
+<div class="course-item" onclick="selectCourse(this)">Introduction to Artificial Intelligence and Machine Learning (AI and ML) Training</div>
+<div class="course-item" onclick="selectCourse(this)">Artificial Intelligence (AI) Training</div>
+<div class="course-item" onclick="selectCourse(this)">Data Science Training</div>
+<div class="course-item" onclick="selectCourse(this)">Applied Agentic AI Certification Training Course</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Artificial Intelligence For Agile Leaders Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">Angular JS Training</div>
+<div class="course-item" onclick="selectCourse(this)">React Native Training</div>
+<div class="course-item" onclick="selectCourse(this)">React JS Training</div>
+<div class="course-item" onclick="selectCourse(this)">Introduction to Blockchain Training</div>
+<div class="course-item" onclick="selectCourse(this)">Python for Beginners Training</div>
+<div class="course-item" onclick="selectCourse(this)">Python Programming Training</div>
+
+<div class="course-item" onclick="selectCourse(this)">PCI DSS Training</div>
+<div class="course-item" onclick="selectCourse(this)">Microsoft AZ-400: Designing and Implementing Microsoft DevOps Solutions Training</div>
+<div class="course-item" onclick="selectCourse(this)">Microsoft Power BI Training</div>
+<div class="course-item" onclick="selectCourse(this)">Microsoft Azure Fundamentals AZ-900 Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">AZ-104 Microsoft Azure Administrator Training</div>
+<div class="course-item" onclick="selectCourse(this)">Microsoft Azure Developer Associate (AZ-204) Certification Course</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Information Systems Security Professional (CISSP) Training</div>
+<div class="course-item" onclick="selectCourse(this)">Microsoft Certified Azure Solutions Architect Expert (AZ-305) Certification Training</div>
+</div>
+
+<label>Select Sales Person</label>
+<select id="sales" onchange="autoSelectRegion()">
+    <option value="">Select Sales Person</option>
+</select>
+
+<!-- Display selected region info -->
+<div id="regionDisplay" class="region-info" style="display:none;">
+    📍 <strong>Auto-selected Region:</strong> <span id="selectedRegion"></span>
+</div>
+
+<div class="button-group">
+<button class="generate-btn" onclick="generateTemplate()">Generate Template</button>
+<button class="copy-btn" onclick="copyTemplate()">Copy Template</button>
+</div>
+
+<!-- Toast Message - Below Buttons -->
+<div id="toastMessage" class="toast-message">
+    <span>✓</span>
+    <span id="toastText">Template Copied Successfully!</span>
+</div>
+
+</div>
+
+<div class="right-panel">
+<div class="section-title">Generated Email Template</div>
+<div id="output">Your generated template will appear here...</div>
+</div>
+
+</div>
+
+</div>
+
+<!-- Admin Portal - Compact -->
+<div id="adminPortal" class="admin-portal">
+    <div class="admin-content">
+        <div class="admin-header">
+            <span>📋 Manage Sales Persons</span>
+            <button class="close-admin" onclick="closeAdminPortal()">✕</button>
+        </div>
+        <div class="admin-body">
+            
+            <!-- Statistics -->
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-number" id="totalSales">0</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="totalIndia">0</div>
+                    <div class="stat-label">India</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="totalMEA">0</div>
+                    <div class="stat-label">MEA</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="totalUSA">0</div>
+                    <div class="stat-label">USA</div>
+                </div>
+            </div>
+            
+            <!-- Add New Sales Person -->
+            <div class="add-sales-section">
+                <h3>➕ Add Sales Person</h3>
+                <div class="form-row">
+                    <input type="text" id="newSalesName" placeholder="Name">
+                    <select id="newSalesRegion">
+                        <option value="india">India/APAC</option>
+                        <option value="mea">MEA/Europe</option>
+                        <option value="usa">USA</option>
+                    </select>
+                </div>
+                <button class="add-btn" onclick="addSalesPerson()">Add</button>
+            </div>
+            
+            <!-- Sales Persons List -->
+            <div class="sales-list-section">
+                <div class="sales-list-header">
+                    <div>Name</div>
+                    <div>Region</div>
+                    <div>Action</div>
+                </div>
+                <div id="adminSalesList" class="sales-list-container">
+                    <!-- Dynamic list will appear here -->
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+
+// Flag to track if we should clear on next input
+let shouldClearOnNextInput = false;
+
+// Handle input click - select all text for easy replacement
+function handleInputClick() {
+    const courseInput = document.getElementById('courseSearch');
+    if (courseInput.value.length > 0) {
+        courseInput.select();
+    }
+    showDropdown();
+}
+
+// Handle input change - clear previous content when user starts typing new search
+function handleInputChange() {
+    const courseInput = document.getElementById('courseSearch');
+    const clearBtn = document.getElementById('clearCourseBtn');
+    
+    // If user starts typing and there was a previous selection, clear it
+    if (shouldClearOnNextInput && courseInput.value.length === 1) {
+        // This is the first character of new search - keep it, don't clear
+        shouldClearOnNextInput = false;
+    }
+    
+    // Show/hide clear button
+    if (courseInput.value.length > 0) {
+        clearBtn.style.display = 'flex';
+    } else {
+        clearBtn.style.display = 'none';
+    }
+    
+    filterCourses();
+}
+
+// Toast notification function with color based on action
+function showToast(message, isSuccess = true, action = 'default') {
+    const toast = document.getElementById('toastMessage');
+    const toastText = document.getElementById('toastText');
+    
+    if(window.toastTimeout) {
+        clearTimeout(window.toastTimeout);
+    }
+    
+    toastText.innerHTML = message;
+    const iconSpan = toast.querySelector('span:first-child');
+    
+    if(action === 'generate') {
+        toast.style.backgroundColor = '#0078d4';
+        iconSpan.innerHTML = '📧';
+        toast.style.boxShadow = '0 4px 12px rgba(0,120,212,0.3)';
+    } 
+    else if(action === 'copy') {
+        toast.style.backgroundColor = '#28a745';
+        iconSpan.innerHTML = '📋';
+        toast.style.boxShadow = '0 4px 12px rgba(40,167,69,0.3)';
+    }
+    else if(!isSuccess) {
+        toast.style.backgroundColor = '#dc3545';
+        iconSpan.innerHTML = '⚠️';
+        toast.style.boxShadow = '0 4px 12px rgba(220,53,69,0.3)';
+    }
+    else {
+        toast.style.backgroundColor = '#28a745';
+        iconSpan.innerHTML = '✓';
+        toast.style.boxShadow = '0 4px 12px rgba(40,167,69,0.15)';
+    }
+    
+    toast.classList.add('show');
+    
+    window.toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+    }, 2500);
+}
+
+// Toggle clear button visibility
+function toggleClearButton() {
+    const courseInput = document.getElementById('courseSearch');
+    const clearBtn = document.getElementById('clearCourseBtn');
+    if (courseInput.value.length > 0) {
+        clearBtn.style.display = 'flex';
+    } else {
+        clearBtn.style.display = 'none';
+    }
+}
+
+// Clear course input function
+function clearCourseInput() {
+    const courseInput = document.getElementById('courseSearch');
+    courseInput.value = '';
+    courseInput.focus();
+    document.getElementById('clearCourseBtn').style.display = 'none';
+    filterCourses();
+    currentSelectedIndex = -1;
+    shouldClearOnNextInput = false;
+}
+
+let currentSelectedIndex = -1;
+let visibleItems = [];
+
+// Handle keyboard navigation
+function handleKeyNavigation(event) {
+    const items = document.getElementsByClassName('course-item');
+    const dropdown = document.getElementById('courseDropdown');
+    
+    visibleItems = [];
+    for(let i = 0; i < items.length; i++) {
+        if(items[i].style.display !== 'none') {
+            visibleItems.push(items[i]);
+        }
+    }
+    
+    if(event.key === 'ArrowDown') {
+        event.preventDefault();
+        if(dropdown.style.display === 'none' || dropdown.style.display === '') {
+            dropdown.style.display = 'block';
+            filterCourses();
+        }
+        
+        if(currentSelectedIndex >= 0 && visibleItems[currentSelectedIndex]) {
+            visibleItems[currentSelectedIndex].classList.remove('selected');
+        }
+        
+        currentSelectedIndex = Math.min(currentSelectedIndex + 1, visibleItems.length - 1);
+        
+        if(visibleItems[currentSelectedIndex]) {
+            visibleItems[currentSelectedIndex].classList.add('selected');
+            visibleItems[currentSelectedIndex].scrollIntoView({ block: 'nearest' });
+        }
+    }
+    else if(event.key === 'ArrowUp') {
+        event.preventDefault();
+        if(dropdown.style.display === 'none' || dropdown.style.display === '') {
+            dropdown.style.display = 'block';
+            filterCourses();
+        }
+        
+        if(currentSelectedIndex >= 0 && visibleItems[currentSelectedIndex]) {
+            visibleItems[currentSelectedIndex].classList.remove('selected');
+        }
+        
+        currentSelectedIndex = Math.max(currentSelectedIndex - 1, 0);
+        
+        if(visibleItems[currentSelectedIndex]) {
+            visibleItems[currentSelectedIndex].classList.add('selected');
+            visibleItems[currentSelectedIndex].scrollIntoView({ block: 'nearest' });
+        }
+    }
+    else if(event.key === 'Enter') {
+        event.preventDefault();
+        let courseToSelect = null;
+        
+        if(currentSelectedIndex >= 0 && visibleItems[currentSelectedIndex]) {
+            courseToSelect = visibleItems[currentSelectedIndex];
+        }
+        else if(visibleItems.length > 0) {
+            const inputValue = document.getElementById('courseSearch').value.toLowerCase();
+            const exactMatch = visibleItems.find(item => 
+                item.innerText.toLowerCase() === inputValue
+            );
+            if(exactMatch) {
+                courseToSelect = exactMatch;
+            } else {
+                courseToSelect = visibleItems[0];
+            }
+        }
+        
+        if(courseToSelect) {
+            selectCourse(courseToSelect);
+            dropdown.style.display = 'none';
+            currentSelectedIndex = -1;
+        }
+    }
+    else if(event.key === 'Tab') {
+        if(visibleItems.length > 0 && dropdown.style.display === 'block') {
+            event.preventDefault();
+            const firstItem = visibleItems[0];
+            if(firstItem) {
+                selectCourse(firstItem);
+                dropdown.style.display = 'none';
+                currentSelectedIndex = -1;
+            }
+        }
+    }
+    else if(event.key === 'Escape') {
+        dropdown.style.display = 'none';
+        currentSelectedIndex = -1;
+    }
+}
+
+// Sales data storage
+let salesPersons = [];
+
+// Load saved data from localStorage
+function loadSalesData() {
+    const saved = localStorage.getItem('salesPersons');
+    if(saved) {
+        salesPersons = JSON.parse(saved);
+    } else {
+        salesPersons = [
+            { name: "Vidya", region: "india" },
+            { name: "Yash", region: "india" },
+            { name: "Sunil", region: "india" },
+            { name: "Abhishek", region: "india" },
+            { name: "Akhilesh", region: "mea" },
+            { name: "Sampoorna", region: "usa" },
+            { name: "Ahamed", region: "usa" },
+            { name: "Vaibhav", region: "usa" },
+            { name: "Debendra", region: "usa" }
+        ];
+        saveSalesData();
+    }
+    refreshAllDisplays();
+}
+
+function saveSalesData() {
+    localStorage.setItem('salesPersons', JSON.stringify(salesPersons));
+}
+
+function refreshAllDisplays() {
+    refreshSalesDropdown();
+    refreshAdminList();
+    updateStats();
+}
+
+function refreshSalesDropdown() {
+    const salesDropdown = document.getElementById('sales');
+    
+    if(salesPersons.length === 0) {
+        salesDropdown.innerHTML = '<option value="">Select Sales Person</option>';
+        return;
+    }
+    
+    let dropdownHtml = '<option value="">Select Sales Person</option>';
+    salesPersons.forEach(person => {
+        dropdownHtml += `<option value="${escapeHtml(person.name)}">${escapeHtml(person.name)}</option>`;
+    });
+    salesDropdown.innerHTML = dropdownHtml;
+}
+
+function refreshAdminList() {
+    const container = document.getElementById('adminSalesList');
+    
+    if(salesPersons.length === 0) {
+        container.innerHTML = '<div class="empty-list">No sales persons added</div>';
+        return;
+    }
+    
+    let listHtml = '';
+    salesPersons.forEach((person, index) => {
+        let regionClass = '';
+        let regionText = '';
+        
+        if(person.region === 'india') {
+            regionClass = 'region-india';
+            regionText = 'India/APAC';
+        } else if(person.region === 'mea') {
+            regionClass = 'region-mea';
+            regionText = 'MEA/Europe';
+        } else {
+            regionClass = 'region-usa';
+            regionText = 'USA';
+        }
+        
+        listHtml += `
+            <div class="sales-row">
+                <div class="sales-name">${escapeHtml(person.name)}</div>
+                <div><span class="region-badge ${regionClass}">${regionText}</span></div>
+                <div><button class="delete-sales-btn" onclick="deleteSalesPerson(${index})">Del</button></div>
+            </div>
+        `;
+    });
+    container.innerHTML = listHtml;
+}
+
+function updateStats() {
+    document.getElementById('totalSales').textContent = salesPersons.length;
+    document.getElementById('totalIndia').textContent = salesPersons.filter(p => p.region === 'india').length;
+    document.getElementById('totalMEA').textContent = salesPersons.filter(p => p.region === 'mea').length;
+    document.getElementById('totalUSA').textContent = salesPersons.filter(p => p.region === 'usa').length;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function addSalesPerson() {
+    const name = document.getElementById('newSalesName').value.trim();
+    const region = document.getElementById('newSalesRegion').value;
+    
+    if(!name) {
+        showToast('⚠️ Please enter name', false);
+        return;
+    }
+    
+    if(salesPersons.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+        showToast('⚠️ Sales person already exists!', false);
+        return;
+    }
+    
+    salesPersons.push({ name: name, region: region });
+    saveSalesData();
+    refreshAllDisplays();
+    
+    document.getElementById('newSalesName').value = '';
+    showToast(`✓ ${name} added successfully!`, true);
+}
+
+function deleteSalesPerson(index) {
+    const personName = salesPersons[index].name;
+    if(confirm(`Delete "${personName}"?`)) {
+        salesPersons.splice(index, 1);
+        saveSalesData();
+        refreshAllDisplays();
+        
+        const salesDropdown = document.getElementById('sales');
+        if(salesDropdown.value === personName) {
+            salesDropdown.value = '';
+            document.getElementById('regionDisplay').style.display = 'none';
+            selectedRegionValue = '';
+        }
+        showToast(`✓ ${personName} deleted`, true);
+    }
+}
+
+function openAdminPortal() {
+    refreshAdminList();
+    updateStats();
+    document.getElementById('adminPortal').style.display = 'flex';
+}
+
+function closeAdminPortal() {
+    document.getElementById('adminPortal').style.display = 'none';
+}
+
+let selectedRegionValue = "";
+
+function showDropdown(){
+    document.getElementById("courseDropdown").style.display = "block";
+    filterCourses();
+}
+
+function filterCourses(){
+    let input = document.getElementById("courseSearch").value.toLowerCase();
+    let items = document.getElementsByClassName("course-item");
+    let hasVisible = false;
+    
+    for(let i = 0; i < items.length; i++){
+        let txt = items[i].innerText.toLowerCase();
+        if(txt.includes(input)){
+            items[i].style.display = "block";
+            hasVisible = true;
+        }
+        else{
+            items[i].style.display = "none";
+        }
+    }
+    
+    const dropdown = document.getElementById("courseDropdown");
+    if(!hasVisible && input.length > 0) {
+        dropdown.style.display = "none";
+    } else if(input.length > 0 || dropdown.style.display === "block") {
+        dropdown.style.display = "block";
+    }
+    
+    currentSelectedIndex = -1;
+}
+
+function selectCourse(element){
+    const courseInput = document.getElementById("courseSearch");
+    courseInput.value = element.innerText;
+    document.getElementById("courseDropdown").style.display = "none";
+    document.getElementById("clearCourseBtn").style.display = 'flex';
+    currentSelectedIndex = -1;
+    // Set flag so that next time user types, it clears the input
+    shouldClearOnNextInput = false;
+}
+
+function autoSelectRegion(){
+    let sales = document.getElementById("sales").value;
+    let regionDisplayDiv = document.getElementById("regionDisplay");
+    let selectedRegionSpan = document.getElementById("selectedRegion");
+    
+    const selectedPerson = salesPersons.find(p => p.name === sales);
+    
+    if(selectedPerson) {
+        selectedRegionValue = selectedPerson.region;
+        
+        if(selectedPerson.region === "india"){
+            selectedRegionSpan.innerHTML = "India / APC Region";
+        } else if(selectedPerson.region === "mea"){
+            selectedRegionSpan.innerHTML = "MEA / Europe Region";
+        } else if(selectedPerson.region === "usa"){
+            selectedRegionSpan.innerHTML = "USA Region";
+        }
+        regionDisplayDiv.style.display = "block";
+    } else {
+        regionDisplayDiv.style.display = "none";
+        selectedRegionValue = "";
+    }
+}
+
+function generateTemplate(){
+    let customer = document.getElementById("customer").value;
+    let course = document.getElementById("courseSearch").value;
+    let sales = document.getElementById("sales").value;
+    let region = selectedRegionValue;
+    
+    if(!sales){
+        showToast('⚠️ Please select a Sales Person', false);
+        return;
+    }
+    
+    if(!customer){
+        showToast('⚠️ Please enter Customer Name', false);
+        return;
+    }
+    
+    if(!course){
+        showToast('⚠️ Please select a Course', false);
+        return;
+    }
+    
+    if(!region){
+        showToast('⚠️ Region not detected. Please select a valid Sales Person', false);
+        return;
+    }
+    
+    let signature = "";
+    
+    if(region === "india"){
+        signature = `Regards,<br>
+<b>Team Support</b><br>
+<b>Business Manager</b><br>
+<b>+91 9611723780 | +61-272025160</b>`;
+    }
+    else if(region === "mea"){
+        signature = `Regards,<br>
+<b>Team Support</b><br>
+<b>Business Manager</b><br>
+<b>+44-1414890048 | +91 9611710069</b>`;
+    }
+    else if(region === "usa"){
+        signature = `Regards,<br>
+<b>Team Support</b><br>
+<b>USA - +1-361-998-9988</b><br>
+<b>CAN - +1-249-500-3143</b>`;
+    }
+    
+    let template = `Hi ${customer},<br><br>
+Greetings!<br><br>
+Thank you for your interest shown for our <b>${course}</b>.<br><br>
+Your query is being forwarded to my colleague <b>${sales} (In cc)</b> who will be providing you with all the necessary information. Meanwhile, please share the below information so that we could assist you accordingly.<br><br>
+1. Participant count:<br>
+2. Preferred dates:<br>
+3. Private/Public session:<br>
+4. Contact number:<br><br>
+@${sales} - Please share the information and do the needful.<br><br>
+${signature}
+`;
+    
+    document.getElementById("output").innerHTML = template;
+    showToast('✓ Template generated successfully!', true, 'generate');
+}
+
+async function copyTemplate() {
+    let output = document.getElementById("output");
+    let templateText = output.innerText;
+    
+    if(!templateText || templateText === "Your generated template will appear here...") {
+        showToast('⚠️ Please generate a template first', false);
+        return;
+    }
+    
+    try {
+        await navigator.clipboard.write([
+            new ClipboardItem({
+                "text/html": new Blob([output.innerHTML], { type: "text/html" }),
+                "text/plain": new Blob([output.innerText], { type: "text/plain" })
+            })
+        ]);
+        showToast('✓ Template Copied Successfully!', true, 'copy');
+    } catch (err) {
+        showToast('✗ Copy Failed. Please try again.', false);
+    }
+}
+
+document.addEventListener('click', function(event) {
+    let dropdown = document.getElementById("courseDropdown");
+    let searchInput = document.getElementById("courseSearch");
+    let clearBtn = document.getElementById("clearCourseBtn");
+    
+    if(searchInput && dropdown && !searchInput.contains(event.target) && !dropdown.contains(event.target) && !clearBtn.contains(event.target)) {
+        dropdown.style.display = "none";
+        currentSelectedIndex = -1;
+    }
+});
+
+window.onclick = function(event) {
+    let modal = document.getElementById('adminPortal');
+    if (event.target === modal) {
+        closeAdminPortal();
+    }
+}
+
+// Initialize
+loadSalesData();
+
+setTimeout(() => {
+    toggleClearButton();
+}, 100);
+
+</script>
+<script disable-devtool-auto src='https://cdn.jsdelivr.net/npm/disable-devtool'></script>
+</body>
+
+</html>
