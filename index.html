@@ -90,6 +90,8 @@ body{
     padding:25px;
     border-radius:12px;
     border:1px solid #dbe7f3;
+    display:flex;
+    flex-direction:column;
 }
 
 .right-panel{
@@ -230,7 +232,7 @@ select:focus{
     transform: scale(0.98);
 }
 
-.howto-btn {
+.howto-btn-bottom {
     width:100%;
     padding:12px;
     border:1px solid #0078d4;
@@ -245,9 +247,10 @@ select:focus{
     align-items: center;
     justify-content: center;
     gap: 8px;
+    margin-top: 15px;
 }
 
-.howto-btn:hover {
+.howto-btn-bottom:hover {
     background:#0078d4;
     color:#fff;
     transform: scale(1.02);
@@ -377,16 +380,6 @@ select:focus{
     color: #666;
     font-size: 12px;
     line-height: 1.4;
-}
-
-.highlight {
-    background: #e8f0fe;
-    color: #0078d4;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 11px;
-    display: inline-block;
-    margin-top: 5px;
 }
 
 .howto-footer {
@@ -918,14 +911,16 @@ Email Template Generator
 
 <div class="button-group">
 <button class="copy-btn" onclick="copyTemplate()">📋 Copy Template</button>
-<button class="howto-btn" onclick="showHowToPopup()">❓ How to Use</button>
 </div>
 
-<!-- Toast Message - Below Buttons -->
+<!-- Toast Message -->
 <div id="toastMessage" class="toast-message">
     <span>✓</span>
     <span id="toastText">Template Copied Successfully!</span>
 </div>
+
+<!-- How to Use Button at the very bottom -->
+<button class="howto-btn-bottom" onclick="showHowToPopup()">❓ How to Use</button>
 
 </div>
 
