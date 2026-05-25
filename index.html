@@ -6,7 +6,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Email Generator</title>
+<title>Email Template Generator - Updated Version</title>
 
 <style>
 
@@ -40,6 +40,19 @@ body{
     font-weight:bold;
     text-align:center;
     position:relative;
+}
+
+.header-badge {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #ffc107;
+    color: #333;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
 }
 
 /* Small Admin Button - Top Right Corner */
@@ -100,11 +113,6 @@ label{
     font-weight:bold;
     color:#333;
     font-size:14px;
-}
-
-.input-wrapper {
-    position: relative;
-    width: 100%;
 }
 
 input,
@@ -196,41 +204,53 @@ select:focus{
 
 .button-group{
     display:flex;
+    flex-direction: column;
     gap:12px;
     margin-top:10px;
 }
 
-button{
-    flex:1;
+.copy-btn{
+    width:100%;
     padding:14px;
     border:none;
     border-radius:8px;
     font-size:15px;
     font-weight:bold;
     cursor:pointer;
-    transition: transform 0.1s ease;
-}
-
-button:active {
-    transform: scale(0.98);
-}
-
-.generate-btn{
-    background:#0078d4;
-    color:#fff;
-}
-
-.generate-btn:hover{
-    background:#005a9e;
-}
-
-.copy-btn{
     background:#28a745;
     color:#fff;
+    transition: transform 0.1s ease;
 }
 
 .copy-btn:hover{
     background:#1e7e34;
+}
+
+.copy-btn:active {
+    transform: scale(0.98);
+}
+
+.howto-btn {
+    width:100%;
+    padding:12px;
+    border:1px solid #0078d4;
+    border-radius:8px;
+    font-size:14px;
+    font-weight:bold;
+    cursor:pointer;
+    background:transparent;
+    color:#0078d4;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.howto-btn:hover {
+    background:#0078d4;
+    color:#fff;
+    transform: scale(1.02);
 }
 
 #output{
@@ -278,6 +298,133 @@ button:active {
 
 .toast-message span:last-child {
     font-size: 14px;
+}
+
+/* How to Use Popup Styles */
+.howto-popup {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+}
+
+.howto-content {
+    background: #fff;
+    border-radius: 16px;
+    width: 500px;
+    max-width: 90%;
+    max-height: 85%;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.howto-header {
+    background: linear-gradient(135deg, #0078d4, #005a9e);
+    color: #fff;
+    padding: 20px;
+    text-align: center;
+}
+
+.howto-header h2 {
+    font-size: 22px;
+    margin-bottom: 5px;
+}
+
+.howto-header p {
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+.howto-body {
+    padding: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding: 10px;
+    background: #f8fbff;
+    border-radius: 10px;
+    transition: all 0.2s;
+}
+
+.step-item:hover {
+    background: #e8f0fe;
+    transform: translateX(5px);
+}
+
+.step-number {
+    width: 32px;
+    height: 32px;
+    background: #0078d4;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.step-text {
+    flex: 1;
+}
+
+.step-text h3 {
+    color: #1d3557;
+    font-size: 15px;
+    margin-bottom: 4px;
+}
+
+.step-text p {
+    color: #666;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.feature-tag {
+    display: inline-block;
+    background: #e8f0fe;
+    color: #0078d4;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    margin: 5px 4px 0 0;
+}
+
+.howto-footer {
+    padding: 15px;
+    border-top: 1px solid #e0e8f0;
+    display: flex;
+    justify-content: center;
+}
+
+.close-howto-btn {
+    background: #0078d4;
+    color: #fff;
+    padding: 10px 25px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.close-howto-btn:hover {
+    background: #005a9e;
+    transform: scale(1.02);
 }
 
 /* Admin Portal Styles - Compact */
@@ -532,6 +679,19 @@ button:active {
     padding:3px 10px;
 }
 
+.howto-content {
+    width: 95%;
+}
+
+.step-item {
+    flex-direction: column;
+    text-align: center;
+}
+
+.step-number {
+    margin: 0 auto;
+}
+
 }
 
 </style>
@@ -543,6 +703,7 @@ button:active {
 <div class="container">
 
 <div class="header">
+<span class="header-badge">✨ Updated Version v2.0</span>
 Email Template Generator
 <button class="admin-btn" onclick="openAdminPortal()">⚙️ Admin</button>
 </div>
@@ -552,13 +713,13 @@ Email Template Generator
 <div class="left-panel">
 
 <div class="section-title">
-Input Details
+📝 Input Details
 </div>
 
-<label>Customer Name</label>
-<input type="text" id="customer" placeholder="Enter Customer Name">
+<label>👤 Customer Name</label>
+<input type="text" id="customer" placeholder="Enter Customer Name" onkeyup="autoGenerateTemplate()" onchange="autoGenerateTemplate()">
 
-<label>Select Course</label>
+<label>📚 Select Course</label>
 <div class="course-input-wrapper">
     <input 
     type="text"
@@ -566,7 +727,7 @@ Input Details
     placeholder="Type course name (CSPO, PMP, etc.)"
     autocomplete="off"
     onclick="handleInputClick()"
-    onkeyup="filterCourses()"
+    onkeyup="handleCourseKeyUp(event)"
     oninput="handleInputChange()"
     onkeydown="handleKeyNavigation(event)"
     >
@@ -626,7 +787,6 @@ Input Details
 <div class="course-item" onclick="selectCourse(this)">Professional Scrum Master-AI Essentials (PSM-AI) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Professional Scrum Product Owner-AI Essentials (PSPO-AI Essentials) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">ICAgile Adaptive Org Design (ICP-ORG) Certification Training</div>
-
 <div class="course-item" onclick="selectCourse(this)">AI-Empowered Leading SAFe 6.0 Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">AI-Empowered SAFe 6.0 Scrum Master (SSM) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">AI-Empowered SAFe 6.0 Product Owner/Product Manager (POPM) Certification Training</div>
@@ -647,7 +807,6 @@ Input Details
 <div class="course-item" onclick="selectCourse(this)">SAFe for Hardware Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">AI-Native Foundations Certification Training Course</div>
 <div class="course-item" onclick="selectCourse(this)">AI-Native Change Agent Certification Training Course</div>
-
 <div class="course-item" onclick="selectCourse(this)">Project Management Professional (PMP) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Project Management Techniques Training</div>
 <div class="course-item" onclick="selectCourse(this)">PRINCE2 Foundation and Practitioner Certification Training</div>
@@ -664,7 +823,6 @@ Input Details
 <div class="course-item" onclick="selectCourse(this)">Disciplined Agile Foundations (DAF) Training</div>
 <div class="course-item" onclick="selectCourse(this)">PMI-CPMAI Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Primavera P6 Professional Fundamentals Certification Training</div>
-
 <div class="course-item" onclick="selectCourse(this)">Business Case Writing Training</div>
 <div class="course-item" onclick="selectCourse(this)">Conflict Management Training</div>
 <div class="course-item" onclick="selectCourse(this)">Certified Business Analysis Professional (CBAP) Certification Training</div>
@@ -673,7 +831,6 @@ Input Details
 <div class="course-item" onclick="selectCourse(this)">Entry Certificate in Business Analysis (ECBA) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Design Thinking Training</div>
 <div class="course-item" onclick="selectCourse(this)">Agile Analysis Certification (IIBA-AAC) Certification Training</div>
-
 <div class="course-item" onclick="selectCourse(this)">Generative AI for Business & IT Leaders & Managers Training</div>
 <div class="course-item" onclick="selectCourse(this)">Generative AI for Business Analysts & Functional IT Consultants Training</div>
 <div class="course-item" onclick="selectCourse(this)">Cloud Fundamentals for Business Managers & Product Managers Training</div>
@@ -696,7 +853,6 @@ Input Details
 <div class="course-item" onclick="selectCourse(this)">Generative AI for Scrum Masters Training</div>
 <div class="course-item" onclick="selectCourse(this)">Prompt Engineering Course</div>
 <div class="course-item" onclick="selectCourse(this)">Agentic AI Foundation Training Course</div>
-
 <div class="course-item" onclick="selectCourse(this)">Agile Objectives and Key Results (Agile OKRs) MicroCredential Training</div>
 <div class="course-item" onclick="selectCourse(this)">AI for Scrum Masters Micro-credential Course</div>
 <div class="course-item" onclick="selectCourse(this)">AI for Product Owners Micro-credential Training</div>
@@ -711,29 +867,24 @@ Input Details
 <div class="course-item" onclick="selectCourse(this)">ICAgile AI for Customer Insights Micro-credential Training</div>
 <div class="course-item" onclick="selectCourse(this)">UX and Design for Agile Teams Micro-credential Course</div>
 <div class="course-item" onclick="selectCourse(this)">Agile Coaching Skills Micro-credential Training</div>
-
 <div class="course-item" onclick="selectCourse(this)">Six Sigma Fundamentals Training</div>
 <div class="course-item" onclick="selectCourse(this)">Lean Six Sigma Yellow Belt Training</div>
 <div class="course-item" onclick="selectCourse(this)">Lean Six Sigma Green Belt Training</div>
 <div class="course-item" onclick="selectCourse(this)">Lean Six Sigma Black Belt Training</div>
 <div class="course-item" onclick="selectCourse(this)">Root Cause Analysis (RCA) Training</div>
 <div class="course-item" onclick="selectCourse(this)">Lean Six Sigma Yellow Belt Training - 8 Hours Crash Course</div>
-    
 <div class="course-item" onclick="selectCourse(this)">ITIL 4 Foundation Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">ITIL 5 Foundation Certification Training</div>
-
 <div class="course-item" onclick="selectCourse(this)">DevOps Foundation Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Docker and Kubernetes Training</div>
 <div class="course-item" onclick="selectCourse(this)">Continuous Testing Foundation (CTF) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Continuous Delivery Ecosystem Foundation (CDEF) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">DevSecOps Foundation Certification Training</div>
-
 <div class="course-item" onclick="selectCourse(this)">AWS SysOps Administrator Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">AWS DevOps Engineer Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">AWS Cloud Practitioner Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">AWS Certified Solutions Architect Professional Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Cloud Computing with AWS Training</div>
-
 <div class="course-item" onclick="selectCourse(this)">Data Science With Python Training</div>
 <div class="course-item" onclick="selectCourse(this)">Python Django (PD) Training</div>
 <div class="course-item" onclick="selectCourse(this)">Introduction to Artificial Intelligence and Machine Learning (AI and ML) Training</div>
@@ -741,14 +892,12 @@ Input Details
 <div class="course-item" onclick="selectCourse(this)">Data Science Training</div>
 <div class="course-item" onclick="selectCourse(this)">Applied Agentic AI Certification Training Course</div>
 <div class="course-item" onclick="selectCourse(this)">Certified Artificial Intelligence For Agile Leaders Training</div>
-
 <div class="course-item" onclick="selectCourse(this)">Angular JS Training</div>
 <div class="course-item" onclick="selectCourse(this)">React Native Training</div>
 <div class="course-item" onclick="selectCourse(this)">React JS Training</div>
 <div class="course-item" onclick="selectCourse(this)">Introduction to Blockchain Training</div>
 <div class="course-item" onclick="selectCourse(this)">Python for Beginners Training</div>
 <div class="course-item" onclick="selectCourse(this)">Python Programming Training</div>
-
 <div class="course-item" onclick="selectCourse(this)">PCI DSS Training</div>
 <div class="course-item" onclick="selectCourse(this)">Microsoft AZ-400: Designing and Implementing Microsoft DevOps Solutions Training</div>
 <div class="course-item" onclick="selectCourse(this)">Microsoft Power BI Training</div>
@@ -759,8 +908,8 @@ Input Details
 <div class="course-item" onclick="selectCourse(this)">Microsoft Certified Azure Solutions Architect Expert (AZ-305) Certification Training</div>
 </div>
 
-<label>Select Sales Person</label>
-<select id="sales" onchange="autoSelectRegion()">
+<label>👨‍💼 Select Sales Person</label>
+<select id="sales" onchange="autoSelectRegion(); autoGenerateTemplate();">
     <option value="">Select Sales Person</option>
 </select>
 
@@ -770,8 +919,8 @@ Input Details
 </div>
 
 <div class="button-group">
-<button class="generate-btn" onclick="generateTemplate()">Generate Template</button>
-<button class="copy-btn" onclick="copyTemplate()">Copy Template</button>
+<button class="copy-btn" onclick="copyTemplate()">📋 Copy Template</button>
+<button class="howto-btn" onclick="showHowToPopup()">❓ How to Use</button>
 </div>
 
 <!-- Toast Message - Below Buttons -->
@@ -783,12 +932,75 @@ Input Details
 </div>
 
 <div class="right-panel">
-<div class="section-title">Generated Email Template</div>
-<div id="output">Your generated template will appear here...</div>
+<div class="section-title">📧 Generated Email Template</div>
+<div id="output">✨ Your generated template will appear here...<br><br>Start by entering customer name, selecting a course, and choosing a sales person.</div>
 </div>
 
 </div>
 
+</div>
+
+<!-- How to Use Popup -->
+<div id="howtoPopup" class="howto-popup">
+    <div class="howto-content">
+        <div class="howto-header">
+            <h2>📖 How to Use</h2>
+            <p>Simple steps to create professional email templates</p>
+        </div>
+        <div class="howto-body">
+            <div class="step-item">
+                <div class="step-number">1</div>
+                <div class="step-text">
+                    <h3>📝 Enter Customer Name</h3>
+                    <p>Type the customer's name. Template auto-capitalizes (e.g., "vikas" → "Vikas")</p>
+                </div>
+            </div>
+            
+            <div class="step-item">
+                <div class="step-number">2</div>
+                <div class="step-text">
+                    <h3>📚 Select a Course</h3>
+                    <p>Type course name (CSPO, PMP) or browse 150+ courses. Press Enter/Tab to auto-complete</p>
+                    <span class="feature-tag">🔍 Search as you type</span>
+                    <span class="feature-tag">⌨️ Keyboard nav</span>
+                    <span class="feature-tag">❌ Clear button</span>
+                </div>
+            </div>
+            
+            <div class="step-item">
+                <div class="step-number">3</div>
+                <div class="step-text">
+                    <h3>👨‍💼 Select Sales Person</h3>
+                    <p>Choose sales person - Region auto-detects! Manage team via Admin Portal (⚙️ top-right)</p>
+                    <span class="feature-tag">🌍 Auto region</span>
+                    <span class="feature-tag">⚙️ Manage team</span>
+                </div>
+            </div>
+            
+            <div class="step-item">
+                <div class="step-number">✨</div>
+                <div class="step-text">
+                    <h3>Auto-Generation</h3>
+                    <p>Template generates INSTANTLY on the right side. No need to click any generate button!</p>
+                    <span class="feature-tag">⚡ Live preview</span>
+                    <span class="feature-tag">🔄 Real-time</span>
+                </div>
+            </div>
+            
+            <div class="step-item">
+                <div class="step-number">4</div>
+                <div class="step-text">
+                    <h3>📋 Copy & Use</h3>
+                    <p>Click "Copy Template" - ready to paste into Thunderbird or any email client</p>
+                    <span class="feature-tag">📧 Thunderbird ready</span>
+                    <span class="feature-tag">✨ Format preserved</span>
+                </div>
+            </div>
+        </div>
+        <div class="howto-footer">
+            <button class="close-howto-btn" onclick="closeHowToPopup()">Got it!</button>
+        </div>
+    </div>
 </div>
 
 <!-- Admin Portal - Compact -->
@@ -852,10 +1064,92 @@ Input Details
 
 <script>
 
-// Flag to track if we should clear on next input
+// How to Use Popup Functions
+function showHowToPopup() {
+    document.getElementById('howtoPopup').style.display = 'flex';
+}
+
+function closeHowToPopup() {
+    document.getElementById('howtoPopup').style.display = 'none';
+}
+
+// Auto-generate template function
+function autoGenerateTemplate() {
+    let customer = document.getElementById("customer").value;
+    let course = document.getElementById("courseSearch").value;
+    let sales = document.getElementById("sales").value;
+    let region = selectedRegionValue;
+    
+    if(!customer && !course && !sales) {
+        document.getElementById("output").innerHTML = "✨ Your generated template will appear here...\n\nStart by entering customer name, selecting a course, and choosing a sales person.";
+        return;
+    }
+    
+    if(!sales){
+        document.getElementById("output").innerHTML = "⚠️ Please select a Sales Person...";
+        return;
+    }
+    
+    if(!customer){
+        document.getElementById("output").innerHTML = "⚠️ Please enter Customer Name...";
+        return;
+    }
+    
+    if(!course){
+        document.getElementById("output").innerHTML = "⚠️ Please select a Course...";
+        return;
+    }
+    
+    if(!region){
+        document.getElementById("output").innerHTML = "⚠️ Region not detected. Please select a valid Sales Person...";
+        return;
+    }
+    
+    let formattedCustomer = capitalizeName(customer);
+    
+    let signature = "";
+    
+    if(region === "india"){
+        signature = `Regards,<br>
+<b>Team Support</b><br>
+<b>Business Manager</b><br>
+<b>+91 9611723780 | +61-272025160</b>`;
+    }
+    else if(region === "mea"){
+        signature = `Regards,<br>
+<b>Team Support</b><br>
+<b>Business Manager</b><br>
+<b>+44-1414890048 | +91 9611710069</b>`;
+    }
+    else if(region === "usa"){
+        signature = `Regards,<br>
+<b>Team Support</b><br>
+<b>USA - +1-361-998-9988</b><br>
+<b>CAN - +1-249-500-3143</b>`;
+    }
+    
+    let template = `Hi ${formattedCustomer},<br><br>
+Greetings!<br><br>
+Thank you for your interest shown for our <b>${course}</b>.<br><br>
+Your query is being forwarded to my colleague <b>${sales} (In cc)</b> who will be providing you with all the necessary information. Meanwhile, please share the below information so that we could assist you accordingly.<br><br>
+1. Participant count:<br>
+2. Preferred dates:<br>
+3. Private/Public session:<br>
+4. Contact number:<br><br>
+@${sales} - Please share the information and do the needful.<br><br>
+${signature}
+`;
+    
+    document.getElementById("output").innerHTML = template;
+}
+
+function capitalizeName(name) {
+    if(!name || name.length === 0) return name;
+    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+}
+
 let shouldClearOnNextInput = false;
 
-// Handle input click - select all text for easy replacement
 function handleInputClick() {
     const courseInput = document.getElementById('courseSearch');
     if (courseInput.value.length > 0) {
@@ -864,18 +1158,15 @@ function handleInputClick() {
     showDropdown();
 }
 
-// Handle input change - clear previous content when user starts typing new search
+function handleCourseKeyUp(event) {
+    filterCourses();
+    autoGenerateTemplate();
+}
+
 function handleInputChange() {
     const courseInput = document.getElementById('courseSearch');
     const clearBtn = document.getElementById('clearCourseBtn');
     
-    // If user starts typing and there was a previous selection, clear it
-    if (shouldClearOnNextInput && courseInput.value.length === 1) {
-        // This is the first character of new search - keep it, don't clear
-        shouldClearOnNextInput = false;
-    }
-    
-    // Show/hide clear button
     if (courseInput.value.length > 0) {
         clearBtn.style.display = 'flex';
     } else {
@@ -883,10 +1174,10 @@ function handleInputChange() {
     }
     
     filterCourses();
+    autoGenerateTemplate();
 }
 
-// Toast notification function with color based on action
-function showToast(message, isSuccess = true, action = 'default') {
+function showToast(message, isSuccess = true) {
     const toast = document.getElementById('toastMessage');
     const toastText = document.getElementById('toastText');
     
@@ -897,25 +1188,14 @@ function showToast(message, isSuccess = true, action = 'default') {
     toastText.innerHTML = message;
     const iconSpan = toast.querySelector('span:first-child');
     
-    if(action === 'generate') {
-        toast.style.backgroundColor = '#0078d4';
-        iconSpan.innerHTML = '📧';
-        toast.style.boxShadow = '0 4px 12px rgba(0,120,212,0.3)';
-    } 
-    else if(action === 'copy') {
+    if(isSuccess) {
         toast.style.backgroundColor = '#28a745';
-        iconSpan.innerHTML = '📋';
+        iconSpan.innerHTML = '✓';
         toast.style.boxShadow = '0 4px 12px rgba(40,167,69,0.3)';
-    }
-    else if(!isSuccess) {
+    } else {
         toast.style.backgroundColor = '#dc3545';
         iconSpan.innerHTML = '⚠️';
         toast.style.boxShadow = '0 4px 12px rgba(220,53,69,0.3)';
-    }
-    else {
-        toast.style.backgroundColor = '#28a745';
-        iconSpan.innerHTML = '✓';
-        toast.style.boxShadow = '0 4px 12px rgba(40,167,69,0.15)';
     }
     
     toast.classList.add('show');
@@ -925,7 +1205,6 @@ function showToast(message, isSuccess = true, action = 'default') {
     }, 2500);
 }
 
-// Toggle clear button visibility
 function toggleClearButton() {
     const courseInput = document.getElementById('courseSearch');
     const clearBtn = document.getElementById('clearCourseBtn');
@@ -936,13 +1215,13 @@ function toggleClearButton() {
     }
 }
 
-// Clear course input function
 function clearCourseInput() {
     const courseInput = document.getElementById('courseSearch');
     courseInput.value = '';
     courseInput.focus();
     document.getElementById('clearCourseBtn').style.display = 'none';
     filterCourses();
+    autoGenerateTemplate();
     currentSelectedIndex = -1;
     shouldClearOnNextInput = false;
 }
@@ -950,7 +1229,6 @@ function clearCourseInput() {
 let currentSelectedIndex = -1;
 let visibleItems = [];
 
-// Handle keyboard navigation
 function handleKeyNavigation(event) {
     const items = document.getElementsByClassName('course-item');
     const dropdown = document.getElementById('courseDropdown');
@@ -1040,10 +1318,8 @@ function handleKeyNavigation(event) {
     }
 }
 
-// Sales data storage
 let salesPersons = [];
 
-// Load saved data from localStorage
 function loadSalesData() {
     const saved = localStorage.getItem('salesPersons');
     if(saved) {
@@ -1143,12 +1419,12 @@ function addSalesPerson() {
     const region = document.getElementById('newSalesRegion').value;
     
     if(!name) {
-        showToast('⚠️ Please enter name', false);
+        showToast('Please enter name', false);
         return;
     }
     
     if(salesPersons.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-        showToast('⚠️ Sales person already exists!', false);
+        showToast('Sales person already exists!', false);
         return;
     }
     
@@ -1157,7 +1433,7 @@ function addSalesPerson() {
     refreshAllDisplays();
     
     document.getElementById('newSalesName').value = '';
-    showToast(`✓ ${name} added successfully!`, true);
+    showToast(`${name} added successfully!`, true);
 }
 
 function deleteSalesPerson(index) {
@@ -1172,8 +1448,9 @@ function deleteSalesPerson(index) {
             salesDropdown.value = '';
             document.getElementById('regionDisplay').style.display = 'none';
             selectedRegionValue = '';
+            autoGenerateTemplate();
         }
-        showToast(`✓ ${personName} deleted`, true);
+        showToast(`${personName} deleted`, true);
     }
 }
 
@@ -1226,8 +1503,8 @@ function selectCourse(element){
     document.getElementById("courseDropdown").style.display = "none";
     document.getElementById("clearCourseBtn").style.display = 'flex';
     currentSelectedIndex = -1;
-    // Set flag so that next time user types, it clears the input
     shouldClearOnNextInput = false;
+    autoGenerateTemplate();
 }
 
 function autoSelectRegion(){
@@ -1252,77 +1529,16 @@ function autoSelectRegion(){
         regionDisplayDiv.style.display = "none";
         selectedRegionValue = "";
     }
-}
-
-function generateTemplate(){
-    let customer = document.getElementById("customer").value;
-    let course = document.getElementById("courseSearch").value;
-    let sales = document.getElementById("sales").value;
-    let region = selectedRegionValue;
     
-    if(!sales){
-        showToast('⚠️ Please select a Sales Person', false);
-        return;
-    }
-    
-    if(!customer){
-        showToast('⚠️ Please enter Customer Name', false);
-        return;
-    }
-    
-    if(!course){
-        showToast('⚠️ Please select a Course', false);
-        return;
-    }
-    
-    if(!region){
-        showToast('⚠️ Region not detected. Please select a valid Sales Person', false);
-        return;
-    }
-    
-    let signature = "";
-    
-    if(region === "india"){
-        signature = `Regards,<br>
-<b>Team Support</b><br>
-<b>Business Manager</b><br>
-<b>+91 9611723780 | +61-272025160</b>`;
-    }
-    else if(region === "mea"){
-        signature = `Regards,<br>
-<b>Team Support</b><br>
-<b>Business Manager</b><br>
-<b>+44-1414890048 | +91 9611710069</b>`;
-    }
-    else if(region === "usa"){
-        signature = `Regards,<br>
-<b>Team Support</b><br>
-<b>USA - +1-361-998-9988</b><br>
-<b>CAN - +1-249-500-3143</b>`;
-    }
-    
-    let template = `Hi ${customer},<br><br>
-Greetings!<br><br>
-Thank you for your interest shown for our <b>${course}</b>.<br><br>
-Your query is being forwarded to my colleague <b>${sales} (In cc)</b> who will be providing you with all the necessary information. Meanwhile, please share the below information so that we could assist you accordingly.<br><br>
-1. Participant count:<br>
-2. Preferred dates:<br>
-3. Private/Public session:<br>
-4. Contact number:<br><br>
-@${sales} - Please share the information and do the needful.<br><br>
-${signature}
-`;
-    
-    document.getElementById("output").innerHTML = template;
-    showToast('✓ Template generated successfully!', true, 'generate');
+    autoGenerateTemplate();
 }
 
 async function copyTemplate() {
     let output = document.getElementById("output");
     let templateText = output.innerText;
     
-    if(!templateText || templateText === "Your generated template will appear here...") {
-        showToast('⚠️ Please generate a template first', false);
+    if(!templateText || templateText.includes("✨ Your generated template will appear here") || templateText.includes("⚠️ Please select") || templateText.includes("⚠️ Please enter")) {
+        showToast('Please fill all required fields first', false);
         return;
     }
     
@@ -1333,9 +1549,9 @@ async function copyTemplate() {
                 "text/plain": new Blob([output.innerText], { type: "text/plain" })
             })
         ]);
-        showToast('✓ Template Copied Successfully!', true, 'copy');
+        showToast('Template Copied Successfully!', true);
     } catch (err) {
-        showToast('✗ Copy Failed. Please try again.', false);
+        showToast('Copy Failed. Please try again.', false);
     }
 }
 
@@ -1357,7 +1573,6 @@ window.onclick = function(event) {
     }
 }
 
-// Initialize
 loadSalesData();
 
 setTimeout(() => {
