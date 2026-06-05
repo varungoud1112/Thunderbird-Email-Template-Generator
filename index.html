@@ -259,31 +259,8 @@ input:focus, select:focus{
     font-size:16px;
     line-height:1.8;
     color:#000;
-}
-
-/* Editable Sales Person Style */
-.editable-sales {
-    background: #fff3cd;
-    border: 1px dashed #ffc107;
-    border-radius: 4px;
-    padding: 2px 5px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: inline-block;
-}
-
-.editable-sales:hover {
-    background: #ffeaa7;
-    border-color: #ff9800;
-}
-
-.inline-editor-input {
-    padding: 4px 8px;
-    font-size: 14px;
-    border-radius: 4px;
-    border: 1px solid #0078d4;
-    outline: none;
-    font-family: inherit;
+    user-select: text;
+    -webkit-user-select: text;
 }
 
 .toast-message{
@@ -661,7 +638,7 @@ Email Template Generator
     <button class="clear-course-btn" id="clearCourseBtn" onclick="clearCourseInput()" title="Clear course">×</button>
 </div>
 <div id="courseDropdown" class="course-dropdown">
-<div class="course-item" onclick="selectCourse(this)">Certified Scrum Master (CSM) Certification Training</div>
+  <div class="course-item" onclick="selectCourse(this)">Certified Scrum Master (CSM) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Certified Scrum Product Owner (CSPO) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Advanced Certified Scrum Master (A-CSM) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Advanced Certified Scrum Product Owner (A-CSPO) Certification Training</div>
@@ -867,14 +844,14 @@ Email Template Generator
 <button class="howto-btn-bottom" onclick="showHowToPopup()">❓ How to Use</button>
 
 <div class="session-info">
-    💡 <strong>Tip:</strong> Click on the <span style="background:#fff3cd; padding:2px 5px; border-radius:3px;">highlighted sales person name</span> in the template to change it directly!
+    🔒 Copy is only allowed using the "Copy Template" button
 </div>
 
 </div>
 
 <div class="right-panel">
 <div class="section-title">📧 Generated Email Template</div>
-<div id="output">✨ Your generated template will appear here...<br><br>Start by entering customer name, selecting a course, and choosing a sales person.<br><br>💡 <strong>Tip:</strong> Click on the highlighted sales person name to edit it directly!</div>
+<div id="output">✨ Your generated template will appear here...<br><br>Start by entering customer name, selecting a course, and choosing a sales person.</div>
 </div>
 </div>
 </div>
@@ -909,14 +886,63 @@ Email Template Generator
             <div class="simple-step"><div class="step-icon">1️⃣</div><div class="step-info"><strong>Enter Customer Name</strong><span>Auto-capitalizes first letter</span></div></div>
             <div class="simple-step"><div class="step-icon">2️⃣</div><div class="step-info"><strong>Select a Course</strong><span>Type or browse list • Press Enter to select</span></div></div>
             <div class="simple-step"><div class="step-icon">3️⃣</div><div class="step-info"><strong>Select Sales Person</strong><span>Region auto-detects automatically</span></div></div>
-            <div class="simple-step"><div class="step-icon">✏️</div><div class="step-info"><strong>Edit Sales Person</strong><span>Click on the highlighted sales name in the template to change it</span></div></div>
-            <div class="simple-step"><div class="step-icon">📋</div><div class="step-info"><strong>Copy & Paste</strong><span>Ready for email client</span></div></div>
+            <div class="simple-step"><div class="step-icon">✨</div><div class="step-info"><strong>Auto-Generates</strong><span>Template appears instantly on right</span></div></div>
+            <div class="simple-step"><div class="step-icon">📋</div><div class="step-info"><strong>Copy Template</strong><span>Use the Copy Template button only</span></div></div>
         </div>
         <div class="howto-footer"><button class="close-howto-btn" onclick="closeHowToPopup()">Got it!</button></div>
     </div>
 </div>
 
 <script>
+// ============================================
+// PREVENT ALL COPY METHODS EXCEPT COPY BUTTON
+// ============================================
+
+// Block Ctrl+C, Ctrl+X, Ctrl+V
+document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C' || e.key === 'x' || e.key === 'X' || e.key === 'v' || e.key === 'V')) {
+        e.preventDefault();
+        e.stopPropagation();
+        alert("❌ Not allowed! Please use the 'Copy Template' button only.");
+        return false;
+    }
+});
+
+// Block right-click context menu on the entire page
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    alert("❌ Not allowed! Please use the 'Copy Template' button only.");
+    return false;
+});
+
+// Block copy event globally
+document.addEventListener('copy', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    alert("❌ Not allowed! Please use the 'Copy Template' button only.");
+    return false;
+});
+
+// Block cut event
+document.addEventListener('cut', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    alert("❌ Not allowed! Please use the 'Copy Template' button only.");
+    return false;
+});
+
+// Block selectstart on output div to prevent selection (optional but adds security)
+document.getElementById('output').addEventListener('selectstart', function(e) {
+    // Allow selection but not copy - we already block copy
+    // This is just to let users select text but they can't copy
+});
+
+// Block drag events
+document.addEventListener('dragstart', function(e) {
+    e.preventDefault();
+    return false;
+});
+
 // ============================================
 // ADMIN PASSWORD (Only for IP Logs)
 // ============================================
@@ -1056,7 +1082,6 @@ function addSalesPerson() {
         return;
     }
     
-    // Allow duplicate names - no check for existing name
     const newId = Date.now();
     salesPersons.push({ id: newId, name: name, region: region });
     saveSalesData();
@@ -1168,54 +1193,6 @@ function closeSalesManager() {
 }
 
 // ============================================
-// INLINE EDITING FOR SALES PERSON ONLY
-// ============================================
-function editSalesPersonInline() {
-    const currentSalesValue = document.getElementById("sales").value;
-    if(!currentSalesValue) {
-        showToast('Please select a sales person first', false);
-        return;
-    }
-    
-    const currentSalesName = currentSalesValue.split('|')[0];
-    const container = document.getElementById('display-sales');
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = currentSalesName;
-    input.className = 'inline-editor-input';
-    input.style.padding = '4px 8px';
-    input.style.fontSize = '14px';
-    input.style.borderRadius = '4px';
-    input.style.border = '1px solid #0078d4';
-    input.style.minWidth = '150px';
-    input.style.fontFamily = 'inherit';
-    
-    const save = () => {
-        const newValue = input.value.trim();
-        if(newValue && newValue !== currentSalesName) {
-            // Find if the sales person exists in the list (by name, since region is handled by selection)
-            const existingPerson = salesPersons.find(p => p.name === newValue);
-            if(existingPerson) {
-                document.getElementById('sales').value = `${existingPerson.name}|${existingPerson.id}`;
-                autoSelectRegion();
-                showToast(`Sales person changed to: ${newValue}`, true);
-            } else {
-                showToast(`"${newValue}" not found! Add them in Manage Sales first.`, false);
-                autoGenerateTemplate();
-            }
-        }
-        autoGenerateTemplate();
-    };
-    
-    input.addEventListener('blur', save);
-    input.addEventListener('keypress', (e) => { if(e.key === 'Enter') save(); });
-    
-    container.innerHTML = '';
-    container.appendChild(input);
-    input.focus();
-}
-
-// ============================================
 // ADMIN LOGS
 // ============================================
 let isAdminAuthenticated = false;
@@ -1294,7 +1271,7 @@ function autoGenerateTemplate() {
     let region = selectedRegionValue;
     
     if(!customer && !course && !salesValue) {
-        document.getElementById("output").innerHTML = "✨ Your generated template will appear here...<br><br>Start by entering customer name, selecting a course, and choosing a sales person.<br><br>💡 <strong>Tip:</strong> Click on the highlighted sales person name to edit it directly!";
+        document.getElementById("output").innerHTML = "✨ Your generated template will appear here...<br><br>Start by entering customer name, selecting a course, and choosing a sales person.";
         return;
     }
     if(!salesValue){
@@ -1327,7 +1304,7 @@ function autoGenerateTemplate() {
         signature = `Regards,<br><b>Team Support</b><br><b>USA - +1-361-998-9988</b><br><b>CAN - +1-249-500-3143</b>`;
     }
     
-    let template = `Hi ${formattedCustomer},<br><br>Greetings!<br><br>Thank you for your interest shown for our <b>${course}</b>.<br><br>Your query is being forwarded to my colleague <b><span id="display-sales" class="editable-sales" onclick="editSalesPersonInline()" title="Click to edit sales person">${sales}</span> (In cc)</b> who will be providing you with all the necessary information. Meanwhile, please share the below information so that we could assist you accordingly.<br><br>1. Participant count:<br>2. Preferred dates:<br>3. Private/Public session:<br>4. Contact number:<br><br>@${sales} - Please share the information and do the needful.<br><br>${signature}`;
+    let template = `Hi ${formattedCustomer},<br><br>Greetings!<br><br>Thank you for your interest shown for our <b>${course}</b>.<br><br>Your query is being forwarded to my colleague <b>${sales} (In cc)</b> who will be providing you with all the necessary information. Meanwhile, please share the below information so that we could assist you accordingly.<br><br>1. Participant count:<br>2. Preferred dates:<br>3. Private/Public session:<br>4. Contact number:<br><br>@${sales} - Please share the information and do the needful.<br><br>${signature}`;
     
     document.getElementById("output").innerHTML = template;
 }
@@ -1464,19 +1441,9 @@ async function copyTemplate() {
         return;
     }
     try {
-        // Clone the output to remove onclick handlers and styling for copying
-        const cloneOutput = output.cloneNode(true);
-        cloneOutput.querySelectorAll('.editable-sales').forEach(el => {
-            el.removeAttribute('onclick');
-            el.classList.remove('editable-sales');
-            el.style.background = 'none';
-            el.style.border = 'none';
-            el.style.padding = '0';
-        });
-        
         await navigator.clipboard.write([
             new ClipboardItem({
-                "text/html": new Blob([cloneOutput.innerHTML], { type: "text/html" }),
+                "text/html": new Blob([output.innerHTML], { type: "text/html" }),
                 "text/plain": new Blob([output.innerText], { type: "text/plain" })
             })
         ]);
