@@ -638,7 +638,7 @@ Email Template Generator
     <button class="clear-course-btn" id="clearCourseBtn" onclick="clearCourseInput()" title="Clear course">×</button>
 </div>
 <div id="courseDropdown" class="course-dropdown">
-  <div class="course-item" onclick="selectCourse(this)">Certified Scrum Master (CSM) Certification Training</div>
+    <div class="course-item" onclick="selectCourse(this)">Certified Scrum Master (CSM) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Certified Scrum Product Owner (CSPO) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Advanced Certified Scrum Master (A-CSM) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Advanced Certified Scrum Product Owner (A-CSPO) Certification Training</div>
@@ -844,7 +844,7 @@ Email Template Generator
 <button class="howto-btn-bottom" onclick="showHowToPopup()">❓ How to Use</button>
 
 <div class="session-info">
-    🔒 Copy is only allowed using the "Copy Template" button
+    🔒 Template copy is only allowed using the "Copy Template" button
 </div>
 
 </div>
@@ -895,53 +895,70 @@ Email Template Generator
 
 <script>
 // ============================================
-// PREVENT ALL COPY METHODS EXCEPT COPY BUTTON
+// PREVENT COPY METHODS ONLY ON TEMPLATE AREA (#output)
+// Input fields (customer name, course, sales person) can be copied normally
 // ============================================
 
-// Block Ctrl+C, Ctrl+X, Ctrl+V
+// Get the output element
+const outputElement = document.getElementById('output');
+
+// Block Ctrl+C, Ctrl+X only when inside or targeting the template area
 document.addEventListener('keydown', function(e) {
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C' || e.key === 'x' || e.key === 'X' || e.key === 'v' || e.key === 'V')) {
+    const activeElement = document.activeElement;
+    const isOutputFocused = activeElement === outputElement || outputElement.contains(activeElement);
+    const isInputField = activeElement.tagName === 'INPUT' || activeElement.tagName === 'SELECT' || activeElement.tagName === 'TEXTAREA';
+    
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C' || e.key === 'x' || e.key === 'X')) {
+        // Only block if copying from template area, allow from input fields
+        if (isOutputFocused && !isInputField) {
+            e.preventDefault();
+            e.stopPropagation();
+            alert("❌ Not allowed! Please use the 'Copy Template' button to copy the template.");
+            return false;
+        }
+    }
+});
+
+// Block copy event only when coming from template area
+document.addEventListener('copy', function(e) {
+    const selection = window.getSelection();
+    const isTemplateSelected = selection.anchorNode && outputElement.contains(selection.anchorNode);
+    
+    if (isTemplateSelected) {
         e.preventDefault();
         e.stopPropagation();
-        alert("❌ Not allowed! Please use the 'Copy Template' button only.");
+        alert("❌ Not allowed! Please use the 'Copy Template' button to copy the template.");
         return false;
     }
 });
 
-// Block right-click context menu on the entire page
-document.addEventListener('contextmenu', function(e) {
-    e.preventDefault();
-    alert("❌ Not allowed! Please use the 'Copy Template' button only.");
-    return false;
-});
-
-// Block copy event globally
-document.addEventListener('copy', function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    alert("❌ Not allowed! Please use the 'Copy Template' button only.");
-    return false;
-});
-
-// Block cut event
+// Block cut event only on template area
 document.addEventListener('cut', function(e) {
+    const selection = window.getSelection();
+    const isTemplateSelected = selection.anchorNode && outputElement.contains(selection.anchorNode);
+    
+    if (isTemplateSelected) {
+        e.preventDefault();
+        e.stopPropagation();
+        alert("❌ Not allowed! Please use the 'Copy Template' button to copy the template.");
+        return false;
+    }
+});
+
+// Block right-click context menu only on template area
+outputElement.addEventListener('contextmenu', function(e) {
     e.preventDefault();
-    e.stopPropagation();
-    alert("❌ Not allowed! Please use the 'Copy Template' button only.");
+    alert("❌ Not allowed! Please use the 'Copy Template' button to copy the template.");
     return false;
 });
 
-// Block selectstart on output div to prevent selection (optional but adds security)
-document.getElementById('output').addEventListener('selectstart', function(e) {
-    // Allow selection but not copy - we already block copy
-    // This is just to let users select text but they can't copy
-});
-
-// Block drag events
-document.addEventListener('dragstart', function(e) {
+// Block drag start only on template area
+outputElement.addEventListener('dragstart', function(e) {
     e.preventDefault();
     return false;
 });
+
+// Note: Input fields (customer name, course search, sales dropdown) remain fully functional for copy/paste
 
 // ============================================
 // ADMIN PASSWORD (Only for IP Logs)
@@ -1245,7 +1262,7 @@ function renderAdminLogsContent() {
             <div><button class="delete-all-btn" onclick="clearAllLogs()" style="background:#dc3545;">🗑️ Clear All</button>
             <button class="delete-all-btn clear-btn" onclick="refreshLogsDisplay()" style="background:#28a745;">🔄 Refresh</button></div>
         </div>
-        <div class="visitor-table-container"><table class="visitor-table"><thead><tr><th>🌍</th><th>Country</th><th>IP Address</th><th>First Visit</th><th>Last Visit</th><th>Visits</th></tr></thead><tbody>${tableRows}</tbody></table></div>
+        <div class="visitor-table-container"><table class="visitor-table"><thead><tr><th>🌍</th><th>Country</th><th>IP Address</th><th>First Visit</th><th>Last Visit</th><th>Visits</th></tr></thead><tbody>${tableRows}</tbody>}</div>
         <div style="margin-top:15px; padding:10px; background:#f8f9fa; border-radius:8px; font-size:11px; text-align:center;">🔐 Password: <strong>${ADMIN_PASSWORD}</strong></div>
     `;
 }
