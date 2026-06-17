@@ -638,7 +638,7 @@ Email Template Generator
     <button class="clear-course-btn" id="clearCourseBtn" onclick="clearCourseInput()" title="Clear course">×</button>
 </div>
 <div id="courseDropdown" class="course-dropdown">
-    <div class="course-item" onclick="selectCourse(this)">Certified Scrum Master (CSM) Certification Training</div>
+ <div class="course-item" onclick="selectCourse(this)">Certified Scrum Master (CSM) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Certified Scrum Product Owner (CSPO) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Advanced Certified Scrum Master (A-CSM) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Advanced Certified Scrum Product Owner (A-CSPO) Certification Training</div>
@@ -822,7 +822,6 @@ Email Template Generator
 <div class="course-item" onclick="selectCourse(this)">Certified Information Systems Security Professional (CISSP) Training</div>
 <div class="course-item" onclick="selectCourse(this)">Microsoft Certified Azure Solutions Architect Expert (AZ-305) Certification Training</div>
 </div>
-
 <label>👨‍💼 Select Sales Person</label>
 <select id="sales" onchange="autoSelectRegion(); autoGenerateTemplate();">
     <option value="">Select Sales Person</option>
@@ -896,7 +895,7 @@ Email Template Generator
 <script>
 // ============================================
 // PREVENT COPY METHODS ONLY ON TEMPLATE AREA (#output)
-// Input fields (customer name, course, sales person) can be copied normally
+// Input fields (customer name, course search, sales person) can be copied normally
 // ============================================
 
 // Get the output element
@@ -1326,7 +1325,14 @@ function autoGenerateTemplate() {
     document.getElementById("output").innerHTML = template;
 }
 
-function capitalizeName(name) { return name ? name.charAt(0).toUpperCase() + name.slice(1).toLowerCase() : name; }
+function capitalizeName(name) { 
+    if (!name) return name;
+    // Handle multiple words (first, middle, last)
+    return name.split(' ').map(word => {
+        if (word.length === 0) return word;
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }).join(' ');
+}
 
 function handleCourseKeyUp(event) { filterCourses(); autoGenerateTemplate(); }
 function handleInputChange() {
