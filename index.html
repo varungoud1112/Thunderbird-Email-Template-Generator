@@ -638,7 +638,7 @@ Email Template Generator
     <button class="clear-course-btn" id="clearCourseBtn" onclick="clearCourseInput()" title="Clear course">×</button>
 </div>
 <div id="courseDropdown" class="course-dropdown">
- <div class="course-item" onclick="selectCourse(this)">Certified Scrum Master (CSM) Certification Training</div>
+<div class="course-item" onclick="selectCourse(this)">Certified Scrum Master (CSM) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Certified Scrum Product Owner (CSPO) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Advanced Certified Scrum Master (A-CSM) Certification Training</div>
 <div class="course-item" onclick="selectCourse(this)">Advanced Certified Scrum Product Owner (A-CSPO) Certification Training</div>
@@ -1010,6 +1010,29 @@ function addVisitorLog(ip, country, countryCode) {
 }
 
 // ============================================
+// TEMPLATE COPY COUNT STORAGE
+// ============================================
+let templateCopyCount = 0;
+
+function loadTemplateCopyCount() {
+    const saved = localStorage.getItem('templateCopyCount');
+    if(saved) {
+        templateCopyCount = parseInt(saved) || 0;
+    } else {
+        templateCopyCount = 0;
+    }
+}
+
+function saveTemplateCopyCount() {
+    localStorage.setItem('templateCopyCount', templateCopyCount.toString());
+}
+
+function incrementTemplateCopyCount() {
+    templateCopyCount++;
+    saveTemplateCopyCount();
+}
+
+// ============================================
 // IP & COUNTRY DETECTION
 // ============================================
 async function fetchAndLogIP() {
@@ -1261,6 +1284,12 @@ function renderAdminLogsContent() {
             <div><button class="delete-all-btn" onclick="clearAllLogs()" style="background:#dc3545;">🗑️ Clear All</button>
             <button class="delete-all-btn clear-btn" onclick="refreshLogsDisplay()" style="background:#28a745;">🔄 Refresh</button></div>
         </div>
+        <div style="display:flex; gap:15px; margin-bottom:20px; flex-wrap:wrap;">
+            <div class="stat-card" style="background:linear-gradient(135deg, #f0f7ff, #e3f2fd);">
+                <div class="stat-number" style="color:#0078d4;">${templateCopyCount}</div>
+                <div class="stat-label">📋 Templates Copied</div>
+            </div>
+        </div>
         <div class="visitor-table-container"><table class="visitor-table"><thead><tr><th>🌍</th><th>Country</th><th>IP Address</th><th>First Visit</th><th>Last Visit</th><th>Visits</th></tr></thead><tbody>${tableRows}</tbody>}</div>
         <div style="margin-top:15px; padding:10px; background:#f8f9fa; border-radius:8px; font-size:11px; text-align:center;">🔐 Password: <strong>${ADMIN_PASSWORD}</strong></div>
     `;
@@ -1470,6 +1499,8 @@ async function copyTemplate() {
                 "text/plain": new Blob([output.innerText], { type: "text/plain" })
             })
         ]);
+        // Increment the template copy count
+        incrementTemplateCopyCount();
         showToast('Template Copied! Ready to paste in Thunderbird (Ctrl+V)', true);
     } catch(e) {
         showToast('Copy failed', false);
@@ -1494,6 +1525,7 @@ window.onclick = function(e) {
 // Initialize everything
 loadSalesData();
 loadVisitorLogs();
+loadTemplateCopyCount();
 fetchAndLogIP();
 setTimeout(() => {
     if(document.getElementById('courseSearch').value.length) {
