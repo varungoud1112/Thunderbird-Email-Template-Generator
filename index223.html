@@ -1,4 +1,8 @@
-html
+You're absolutely right! The data is stored in `localStorage`, which is specific to each browser/device. When you copy the URL to another device, the data won't be there. I'll add a feature to embed the data directly into the URL as a compressed query parameter, so you can share the dashboard with data intact.
+
+Here's the updated code with URL-based data sharing:
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,6 +16,8 @@ html
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <!-- SheetJS (XLSX) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- LZ-String for compression -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -22,7 +28,6 @@ html
         }
         .dashboard { max-width: 1600px; margin: 0 auto; }
 
-        /* header & upload */
         .header {
             display: flex;
             flex-wrap: wrap;
@@ -51,38 +56,42 @@ html
         }
         .header h1 i { color: #3b82f6; }
 
-        /* Admin portal trigger */
-        .admin-trigger {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: white;
-            padding: 6px 18px 6px 20px;
-            border-radius: 60px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            border: 1px solid #eef2f6;
+        .admin-lock {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 14px;
             cursor: pointer;
+            padding: 6px 8px;
+            border-radius: 30px;
             transition: 0.2s;
+            opacity: 0.5;
         }
-        .admin-trigger:hover { border-color: #3b82f6; background: #f8fafc; }
-        .admin-trigger span {
-            font-weight: 500;
-            font-size: 13px;
-            color: #475569;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .admin-lock:hover {
+            background: #f1f5f9;
+            color: #3b82f6;
+            opacity: 1;
         }
-        .admin-trigger span i { color: #3b82f6; font-size: 14px; }
-        .admin-badge {
-            background: #eef2ff;
-            color: #4f46e5;
-            font-size: 10px;
-            font-weight: 600;
-            padding: 2px 10px;
-            border-radius: 40px;
-            letter-spacing: 0.3px;
-            text-transform: uppercase;
+
+        .share-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 6px 8px;
+            border-radius: 30px;
+            transition: 0.2s;
+            opacity: 0.5;
+        }
+        .share-btn:hover {
+            background: #f1f5f9;
+            color: #10b981;
+            opacity: 1;
+        }
+        .share-btn.has-data {
+            color: #10b981;
+            opacity: 0.8;
         }
 
         .filter-group {
@@ -157,56 +166,87 @@ html
         .admin-modal.active { display: flex; }
         .admin-modal-content {
             background: white;
-            max-width: 500px;
-            width: 90%;
-            padding: 32px 30px;
+            max-width: 480px;
+            width: 92%;
+            padding: 32px 28px;
             border-radius: 32px;
             box-shadow: 0 25px 60px rgba(0,0,0,0.15);
             position: relative;
         }
         .admin-modal-content h2 {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
         .admin-modal-content h2 i { color: #3b82f6; }
         .admin-modal-content .sub {
             color: #64748b;
             font-size: 14px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
+        }
+        .admin-password-section {
+            margin-bottom: 20px;
+        }
+        .admin-password-section label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .admin-password-section input {
+            width: 100%;
+            padding: 10px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 40px;
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .admin-password-section input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+        }
+        .admin-password-section .hint {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 4px;
         }
         .admin-upload-area {
             border: 2px dashed #e2e8f0;
             border-radius: 20px;
-            padding: 40px 20px;
+            padding: 30px 16px;
             text-align: center;
             transition: 0.2s;
             cursor: pointer;
+            margin-top: 4px;
         }
         .admin-upload-area:hover { border-color: #3b82f6; background: #f8fafc; }
-        .admin-upload-area i { font-size: 40px; color: #94a3b8; margin-bottom: 12px; }
-        .admin-upload-area p { font-weight: 500; color: #1e293b; }
-        .admin-upload-area .hint { font-size: 13px; color: #94a3b8; margin-top: 6px; }
+        .admin-upload-area i { font-size: 32px; color: #94a3b8; margin-bottom: 8px; }
+        .admin-upload-area p { font-weight: 500; color: #1e293b; font-size: 14px; }
+        .admin-upload-area .hint { font-size: 12px; color: #94a3b8; margin-top: 4px; }
         .admin-upload-area input[type="file"] { display: none; }
         .admin-upload-area .file-selected {
-            margin-top: 12px;
+            margin-top: 10px;
             color: #3b82f6;
             font-weight: 500;
+            font-size: 13px;
         }
         .admin-actions {
             display: flex;
             gap: 12px;
-            margin-top: 24px;
+            margin-top: 20px;
             justify-content: flex-end;
         }
         .admin-actions button {
-            padding: 10px 28px;
+            padding: 10px 24px;
             border-radius: 60px;
             font-weight: 500;
-            font-size: 14px;
+            font-size: 13px;
             border: none;
             cursor: pointer;
             transition: 0.2s;
@@ -226,10 +266,10 @@ html
             cursor: not-allowed;
         }
         .admin-status {
-            margin-top: 16px;
-            padding: 12px 16px;
+            margin-top: 14px;
+            padding: 10px 14px;
             border-radius: 12px;
-            font-size: 14px;
+            font-size: 13px;
             display: none;
         }
         .admin-status.success {
@@ -243,6 +283,12 @@ html
             background: #fef2f2;
             color: #991b1b;
             border: 1px solid #fecaca;
+        }
+        .admin-status.info {
+            display: block;
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
         }
 
         .kpi-grid {
@@ -326,13 +372,35 @@ html
         }
         .footer-note i { color: #3b82f6; }
 
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 12px 28px;
+            border-radius: 60px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+
         @media (max-width: 700px) {
             .header { flex-direction: column; align-items: stretch; gap: 16px; }
             .filter-group { border-radius: 40px; padding: 12px 16px; flex-wrap: wrap; }
             .chart-grid { grid-template-columns: 1fr; }
             .header-left { flex-direction: column; align-items: stretch; }
-            .admin-trigger { justify-content: center; }
-            .admin-modal-content { padding: 24px 20px; }
+            .admin-lock, .share-btn { align-self: flex-start; margin-left: 8px; }
+            .admin-modal-content { padding: 24px 18px; }
         }
     </style>
 </head>
@@ -342,10 +410,14 @@ html
     <div class="header">
         <div class="header-left">
             <h1><i class="fas fa-chart-simple"></i> Weekly Pulse</h1>
-            <!-- Admin Portal Trigger -->
-            <div class="admin-trigger" id="adminTrigger">
-                <span><i class="fas fa-user-shield"></i> Admin <span class="admin-badge">portal</span></span>
-            </div>
+            <!-- Tiny lock icon - admin access -->
+            <button class="admin-lock" id="adminLockBtn" title="Admin access">
+                <i class="fas fa-lock"></i>
+            </button>
+            <!-- Share button - copy URL with data -->
+            <button class="share-btn" id="shareBtn" title="Share this dashboard with data">
+                <i class="fas fa-link"></i>
+            </button>
         </div>
         <div class="filter-group" id="filterGroup">
             <label><i class="fas fa-globe"></i> Region
@@ -379,26 +451,40 @@ html
     </div>
 
     <div class="footer-note">
-        <i class="fas fa-database"></i> Data is saved locally — share the URL to view this dashboard
+        <i class="fas fa-database"></i> Data is saved in the URL — share the link to view this dashboard anywhere
     </div>
 </div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
 
 <!-- Admin Portal Modal -->
 <div class="admin-modal" id="adminModal">
     <div class="admin-modal-content">
-        <h2><i class="fas fa-upload"></i> Admin Portal</h2>
-        <p class="sub">Upload a new Excel file (.xlsx) to refresh the dashboard data.</p>
-        <div class="admin-upload-area" id="adminDropArea">
-            <i class="fas fa-cloud-upload-alt"></i>
-            <p>Click or drag & drop your .xlsx file</p>
-            <div class="hint">Supports .xlsx, .xls</div>
-            <input type="file" id="adminFileInput" accept=".xlsx,.xls">
-            <div class="file-selected" id="adminFileSelected"></div>
+        <h2><i class="fas fa-shield-alt"></i> Admin Portal</h2>
+        <p class="sub">Enter the admin password to upload a new data file.</p>
+        
+        <div class="admin-password-section">
+            <label for="adminPassword">Password</label>
+            <input type="password" id="adminPassword" placeholder="Enter admin password" autocomplete="off">
+            <div class="hint">Default password: <strong>admin123</strong></div>
         </div>
+
+        <div id="adminUploadSection" style="display: none;">
+            <div class="admin-upload-area" id="adminDropArea">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Click or drag & drop your .xlsx file</p>
+                <div class="hint">Supports .xlsx, .xls</div>
+                <input type="file" id="adminFileInput" accept=".xlsx,.xls">
+                <div class="file-selected" id="adminFileSelected"></div>
+            </div>
+        </div>
+
         <div class="admin-status" id="adminStatus"></div>
         <div class="admin-actions">
             <button class="btn-close" id="adminCloseBtn">Cancel</button>
-            <button class="btn-upload" id="adminUploadBtn" disabled>Upload & Refresh</button>
+            <button class="btn-upload" id="adminAuthBtn">Authenticate</button>
+            <button class="btn-upload" id="adminUploadBtn" style="display:none;" disabled>Upload & Refresh</button>
         </div>
     </div>
 </div>
@@ -409,11 +495,15 @@ html
         let currentData = [];
         let charts = {};
         let pendingFile = null;
+        let isAuthenticated = false;
+        const ADMIN_PASSWORD = 'admin123';
 
         // DOM refs
         const regionSelect = document.getElementById('regionFilter');
         const sourceSelect = document.getElementById('sourceFilter');
         const resetBtn = document.getElementById('resetFilters');
+        const shareBtn = document.getElementById('shareBtn');
+        const toast = document.getElementById('toast');
 
         const kpiLeads = document.getElementById('kpiLeads');
         const kpiPayments = document.getElementById('kpiPayments');
@@ -422,13 +512,116 @@ html
 
         // Admin modal refs
         const adminModal = document.getElementById('adminModal');
-        const adminTrigger = document.getElementById('adminTrigger');
+        const adminLockBtn = document.getElementById('adminLockBtn');
         const adminCloseBtn = document.getElementById('adminCloseBtn');
+        const adminPassword = document.getElementById('adminPassword');
+        const adminAuthBtn = document.getElementById('adminAuthBtn');
+        const adminUploadBtn = document.getElementById('adminUploadBtn');
+        const adminUploadSection = document.getElementById('adminUploadSection');
         const adminFileInput = document.getElementById('adminFileInput');
         const adminDropArea = document.getElementById('adminDropArea');
         const adminFileSelected = document.getElementById('adminFileSelected');
-        const adminUploadBtn = document.getElementById('adminUploadBtn');
         const adminStatus = document.getElementById('adminStatus');
+
+        // ----- Toast notification -----
+        function showToast(message, duration = 3000) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+
+        // ----- URL data compression -----
+        function encodeDataToURL(data) {
+            try {
+                const json = JSON.stringify(data);
+                const compressed = LZString.compressToEncodedURIComponent(json);
+                return compressed;
+            } catch (e) {
+                console.error('Compression error:', e);
+                return null;
+            }
+        }
+
+        function decodeDataFromURL(encoded) {
+            try {
+                if (!encoded) return null;
+                const decompressed = LZString.decompressFromEncodedURIComponent(encoded);
+                if (!decompressed) return null;
+                return JSON.parse(decompressed);
+            } catch (e) {
+                console.error('Decompression error:', e);
+                return null;
+            }
+        }
+
+        function getDataFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            const encoded = params.get('data');
+            if (encoded) {
+                return decodeDataFromURL(encoded);
+            }
+            return null;
+        }
+
+        function updateURLWithData(data) {
+            if (!data || !data.length) {
+                // Remove data param if no data
+                const params = new URLSearchParams(window.location.search);
+                params.delete('data');
+                const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+                window.history.replaceState({}, '', newURL);
+                return;
+            }
+            const encoded = encodeDataToURL(data);
+            if (encoded) {
+                const params = new URLSearchParams(window.location.search);
+                params.set('data', encoded);
+                const newURL = window.location.pathname + '?' + params.toString();
+                window.history.replaceState({}, '', newURL);
+            }
+        }
+
+        // ----- Share functionality -----
+        shareBtn.addEventListener('click', () => {
+            if (!currentData.length) {
+                showToast('No data to share. Upload data first.', 3000);
+                return;
+            }
+            // Ensure URL has the latest data
+            updateURLWithData(currentData);
+            const url = window.location.href;
+            
+            // Copy to clipboard
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showToast('✅ Link copied! Share this URL to view the dashboard anywhere.', 4000);
+                }).catch(() => {
+                    // Fallback
+                    copyToClipboardFallback(url);
+                });
+            } else {
+                copyToClipboardFallback(url);
+            }
+        });
+
+        function copyToClipboardFallback(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('✅ Link copied! Share this URL to view the dashboard anywhere.', 4000);
+            } catch (err) {
+                showToast('📋 Copy this URL: ' + text, 5000);
+            }
+            document.body.removeChild(textarea);
+        }
 
         // ----- helpers -----
         function getUnique(arr, key) {
@@ -452,21 +645,6 @@ html
                 map.set(k, (map.get(k) || 0) + d[valKey]);
             });
             return Array.from(map.entries()).map(([label, value]) => ({ label, value }));
-        }
-
-        // ----- localStorage persistence -----
-        function saveToStorage(data) {
-            try {
-                localStorage.setItem('dashboardData', JSON.stringify(data));
-            } catch (e) { /* ignore */ }
-        }
-
-        function loadFromStorage() {
-            try {
-                const stored = localStorage.getItem('dashboardData');
-                if (stored) return JSON.parse(stored);
-            } catch (e) { /* ignore */ }
-            return null;
         }
 
         // ----- render -----
@@ -496,12 +674,14 @@ html
                 regionSelect.disabled = true;
                 sourceSelect.disabled = true;
                 resetBtn.disabled = true;
+                shareBtn.classList.remove('has-data');
                 return;
             }
 
             regionSelect.disabled = false;
             sourceSelect.disabled = false;
             resetBtn.disabled = false;
+            shareBtn.classList.add('has-data');
 
             document.querySelectorAll('.chart-placeholder').forEach(el => el.remove());
 
@@ -642,7 +822,7 @@ html
         }
 
         // ----- load data from parsed rows -----
-        function loadData(rows, persist = true) {
+        function loadData(rows, persistToURL = true) {
             currentData = rows.map(row => {
                 let region = (row[1] || '').toString().trim();
                 if (region.toUpperCase() === 'INDIA') region = 'India';
@@ -654,7 +834,9 @@ html
                     payments: row[4] ? Number(row[4]) : 0
                 };
             });
-            if (persist) saveToStorage(currentData);
+            if (persistToURL) {
+                updateURLWithData(currentData);
+            }
             populateFilters();
             render('All', 'All');
         }
@@ -678,7 +860,15 @@ html
                     adminUploadBtn.disabled = true;
                     pendingFile = null;
                     adminFileSelected.textContent = '';
-                    setTimeout(() => { adminModal.classList.remove('active'); }, 1200);
+                    setTimeout(() => { 
+                        adminModal.classList.remove('active');
+                        isAuthenticated = false;
+                        adminUploadSection.style.display = 'none';
+                        adminAuthBtn.style.display = 'inline-block';
+                        adminUploadBtn.style.display = 'none';
+                        adminPassword.value = '';
+                        showToast('✅ Data uploaded! Share the URL to view anywhere.', 4000);
+                    }, 1200);
                 } catch (err) {
                     adminStatus.className = 'admin-status error';
                     adminStatus.textContent = '❌ Error reading file: ' + err.message;
@@ -687,15 +877,43 @@ html
             reader.readAsArrayBuffer(file);
         }
 
+        // ----- Admin authentication -----
+        function authenticate() {
+            const pwd = adminPassword.value.trim();
+            if (pwd === ADMIN_PASSWORD) {
+                isAuthenticated = true;
+                adminStatus.className = 'admin-status info';
+                adminStatus.textContent = '✅ Authenticated. You can now upload a file.';
+                adminUploadSection.style.display = 'block';
+                adminAuthBtn.style.display = 'none';
+                adminUploadBtn.style.display = 'inline-block';
+                adminUploadBtn.disabled = true;
+                adminFileSelected.textContent = '';
+                adminFileInput.value = '';
+                pendingFile = null;
+            } else {
+                adminStatus.className = 'admin-status error';
+                adminStatus.textContent = '❌ Incorrect password. Please try again.';
+                adminPassword.value = '';
+                adminPassword.focus();
+            }
+        }
+
         // ----- Admin modal logic -----
-        adminTrigger.addEventListener('click', () => {
+        adminLockBtn.addEventListener('click', () => {
             adminModal.classList.add('active');
             adminStatus.className = 'admin-status';
             adminStatus.textContent = '';
             adminFileSelected.textContent = '';
             adminUploadBtn.disabled = true;
+            adminUploadBtn.style.display = 'none';
+            adminAuthBtn.style.display = 'inline-block';
+            adminUploadSection.style.display = 'none';
+            adminPassword.value = '';
             pendingFile = null;
             adminFileInput.value = '';
+            isAuthenticated = false;
+            setTimeout(() => adminPassword.focus(), 300);
         });
 
         adminCloseBtn.addEventListener('click', () => {
@@ -706,13 +924,22 @@ html
             if (e.target === adminModal) adminModal.classList.remove('active');
         });
 
-        // File selection via click or drag
-        adminDropArea.addEventListener('click', () => adminFileInput.click());
+        adminPassword.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') authenticate();
+        });
+
+        adminAuthBtn.addEventListener('click', authenticate);
+
+        adminDropArea.addEventListener('click', () => {
+            if (isAuthenticated) adminFileInput.click();
+        });
 
         adminDropArea.addEventListener('dragover', (e) => {
             e.preventDefault();
-            adminDropArea.style.borderColor = '#3b82f6';
-            adminDropArea.style.background = '#f0f7ff';
+            if (isAuthenticated) {
+                adminDropArea.style.borderColor = '#3b82f6';
+                adminDropArea.style.background = '#f0f7ff';
+            }
         });
         adminDropArea.addEventListener('dragleave', () => {
             adminDropArea.style.borderColor = '#e2e8f0';
@@ -722,6 +949,11 @@ html
             e.preventDefault();
             adminDropArea.style.borderColor = '#e2e8f0';
             adminDropArea.style.background = 'transparent';
+            if (!isAuthenticated) {
+                adminStatus.className = 'admin-status error';
+                adminStatus.textContent = '❌ Please authenticate first.';
+                return;
+            }
             if (e.dataTransfer.files.length) {
                 const file = e.dataTransfer.files[0];
                 if (file.name.match(/\.(xlsx|xls)$/i)) {
@@ -738,7 +970,7 @@ html
         });
 
         adminFileInput.addEventListener('change', () => {
-            if (adminFileInput.files.length) {
+            if (adminFileInput.files.length && isAuthenticated) {
                 const file = adminFileInput.files[0];
                 pendingFile = file;
                 adminFileSelected.textContent = '📄 ' + file.name;
@@ -749,7 +981,7 @@ html
         });
 
         adminUploadBtn.addEventListener('click', () => {
-            if (pendingFile) {
+            if (pendingFile && isAuthenticated) {
                 handleAdminFile(pendingFile);
             }
         });
@@ -768,14 +1000,35 @@ html
             updateFromFilters();
         });
 
-        // ----- init: try loading from localStorage -----
-        const stored = loadFromStorage();
-        if (stored && stored.length) {
-            // Reconstruct rows from stored objects
-            const rows = stored.map(d => [d.course, d.region, d.source, d.leads, d.payments]);
+        // ----- init: check URL first, then localStorage -----
+        let loaded = false;
+        
+        // 1. Try URL data first
+        const urlData = getDataFromURL();
+        if (urlData && urlData.length) {
+            const rows = urlData.map(d => [d.course, d.region, d.source, d.leads, d.payments]);
             loadData(rows, false);
-        } else {
-            // Empty state
+            loaded = true;
+            showToast('📊 Data loaded from URL', 2000);
+        }
+        
+        // 2. If no URL data, try localStorage
+        if (!loaded) {
+            const stored = localStorage.getItem('dashboardData');
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    if (parsed && parsed.length) {
+                        const rows = parsed.map(d => [d.course, d.region, d.source, d.leads, d.payments]);
+                        loadData(rows, false);
+                        loaded = true;
+                    }
+                } catch (e) { /* ignore */ }
+            }
+        }
+        
+        // 3. If still no data, show empty state
+        if (!loaded) {
             document.querySelectorAll('.kpi-value').forEach(el => {
                 el.textContent = '—';
                 el.classList.add('empty');
@@ -792,8 +1045,11 @@ html
             resetBtn.disabled = true;
         }
 
+        // Expose for debugging
         window.loadData = loadData;
+        window.getCurrentData = () => currentData;
     })();
 </script>
 </body>
 </html>
+```
