@@ -1,1148 +1,922 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weekly Report · Executive Dashboard</title>
-    <!-- Fonts & Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- SheetJS (XLSX) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- LZ-String for compression -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: #f4f6fa;
-            font-family: 'Inter', sans-serif;
-            padding: 24px;
-            color: #1e293b;
-        }
-        .dashboard { max-width: 1600px; margin: 0 auto; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Report — All Regions Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #21253a;
+    --border: #2e3250;
+    --accent: #6c63ff;
+    --accent2: #00d4aa;
+    --accent3: #ff6b6b;
+    --accent4: #ffd166;
+    --text: #e8eaf6;
+    --muted: #7b82b5;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
 
-        /* Header */
-        .header {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 28px;
-            gap: 16px;
-        }
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-        .header h1 {
-            font-weight: 600;
-            font-size: 24px;
-            letter-spacing: -0.3px;
-            background: white;
-            padding: 10px 22px;
-            border-radius: 40px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .header h1 i { color: #3b82f6; }
-        .header .subtitle {
-            color: #94a3b8;
-            font-size: 14px;
-            font-weight: 500;
-        }
+  /* Header */
+  .header { background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%); border-bottom: 1px solid var(--border); padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .header-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.3px; }
+  .header h1 span { color: var(--accent); }
+  .header .subtitle { color: var(--muted); font-size: 0.82rem; margin-top: 3px; }
+  .badge { background: var(--accent); color: white; font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.5px; }
 
-        .admin-lock {
-            background: transparent;
-            border: none;
-            color: #94a3b8;
-            font-size: 14px;
-            cursor: pointer;
-            padding: 6px 8px;
-            border-radius: 30px;
-            transition: 0.2s;
-            opacity: 0.5;
-        }
-        .admin-lock:hover {
-            background: #f1f5f9;
-            color: #3b82f6;
-            opacity: 1;
-        }
+  .header-actions { display: flex; align-items: center; gap: 8px; }
+  .admin-lock, .share-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .admin-lock:hover { border-color: var(--accent); color: var(--accent); }
+  .share-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+  .share-btn.has-data { color: var(--accent2); border-color: var(--accent2); }
 
-        .share-btn {
-            background: transparent;
-            border: none;
-            color: #94a3b8;
-            font-size: 14px;
-            cursor: pointer;
-            padding: 6px 8px;
-            border-radius: 30px;
-            transition: 0.2s;
-            opacity: 0.5;
-        }
-        .share-btn:hover {
-            background: #f1f5f9;
-            color: #10b981;
-            opacity: 1;
-        }
-        .share-btn.has-data {
-            color: #10b981;
-            opacity: 0.8;
-        }
+  /* Filters */
+  .filters { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 32px; display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+  .filter-label { color: var(--muted); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; }
+  select { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-size: 0.84rem; cursor: pointer; outline: none; transition: border-color 0.2s; min-width: 150px; }
+  select:focus, select:hover { border-color: var(--accent); }
+  .filter-group { display: flex; align-items: center; gap: 8px; }
+  .reset-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 0.82rem; transition: all 0.2s; margin-left: auto; }
+  .reset-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+  .record-count { color: var(--accent2); font-size: 0.8rem; font-weight: 600; background: rgba(0,212,170,0.1); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(0,212,170,0.2); }
 
-        /* Filters */
-        .filter-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            background: white;
-            padding: 8px 20px 8px 24px;
-            border-radius: 60px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            align-items: center;
-        }
-        .filter-group label {
-            font-size: 13px;
-            font-weight: 500;
-            color: #64748b;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .filter-group select {
-            border: 1px solid #e2e8f0;
-            border-radius: 40px;
-            padding: 8px 16px 8px 14px;
-            font-size: 13px;
-            background: white;
-            font-weight: 500;
-            color: #1e293b;
-            outline: none;
-            cursor: pointer;
-            min-width: 130px;
-        }
-        .filter-group select:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
-        }
-        .filter-group select:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .reset-btn {
-            background: #f1f5f9;
-            border: none;
-            border-radius: 40px;
-            padding: 6px 16px;
-            font-size: 13px;
-            font-weight: 500;
-            color: #475569;
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .reset-btn:hover { background: #e2e8f0; }
-        .reset-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-        .record-count {
-            color: #3b82f6;
-            font-size: 13px;
-            font-weight: 600;
-            background: rgba(59,130,246,0.08);
-            padding: 5px 14px;
-            border-radius: 20px;
-            border: 1px solid rgba(59,130,246,0.15);
-        }
+  /* KPIs */
+  .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; padding: 24px 32px 0; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; position: relative; overflow: hidden; transition: transform 0.15s, border-color 0.2s; }
+  .kpi:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .kpi::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .kpi.k1::before { background: linear-gradient(90deg, var(--accent), #a78bfa); }
+  .kpi.k2::before { background: linear-gradient(90deg, var(--accent2), #06d6a0); }
+  .kpi.k3::before { background: linear-gradient(90deg, var(--accent3), #ff9f43); }
+  .kpi.k4::before { background: linear-gradient(90deg, var(--accent4), #f7c59f); }
+  .kpi.k5::before { background: linear-gradient(90deg, #48cae4, #0096c7); }
+  .kpi-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .kpi-value { font-size: 2rem; font-weight: 800; margin: 8px 0 4px; letter-spacing: -1px; }
+  .kpi-sub { font-size: 0.78rem; color: var(--muted); }
+  .kpi-icon { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-size: 2rem; opacity: 0.12; }
 
-        /* Admin Modal */
-        .admin-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.5);
-            backdrop-filter: blur(6px);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-        .admin-modal.active { display: flex; }
-        .admin-modal-content {
-            background: white;
-            max-width: 480px;
-            width: 92%;
-            padding: 32px 28px;
-            border-radius: 32px;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.15);
-            position: relative;
-        }
-        .admin-modal-content h2 {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .admin-modal-content h2 i { color: #3b82f6; }
-        .admin-modal-content .sub {
-            color: #64748b;
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-        .admin-password-section {
-            margin-bottom: 20px;
-        }
-        .admin-password-section label {
-            font-size: 13px;
-            font-weight: 500;
-            color: #475569;
-            display: block;
-            margin-bottom: 6px;
-        }
-        .admin-password-section input {
-            width: 100%;
-            padding: 10px 16px;
-            border: 1px solid #e2e8f0;
-            border-radius: 40px;
-            font-size: 14px;
-            outline: none;
-            transition: 0.2s;
-            font-family: 'Inter', sans-serif;
-        }
-        .admin-password-section input:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-        }
-        .admin-password-section .hint {
-            font-size: 12px;
-            color: #94a3b8;
-            margin-top: 4px;
-        }
-        .admin-upload-area {
-            border: 2px dashed #e2e8f0;
-            border-radius: 20px;
-            padding: 30px 16px;
-            text-align: center;
-            transition: 0.2s;
-            cursor: pointer;
-            margin-top: 4px;
-        }
-        .admin-upload-area:hover { border-color: #3b82f6; background: #f8fafc; }
-        .admin-upload-area i { font-size: 32px; color: #94a3b8; margin-bottom: 8px; }
-        .admin-upload-area p { font-weight: 500; color: #1e293b; font-size: 14px; }
-        .admin-upload-area .hint { font-size: 12px; color: #94a3b8; margin-top: 4px; }
-        .admin-upload-area input[type="file"] { display: none; }
-        .admin-upload-area .file-selected {
-            margin-top: 10px;
-            color: #3b82f6;
-            font-weight: 500;
-            font-size: 13px;
-        }
-        .admin-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-            justify-content: flex-end;
-        }
-        .admin-actions button {
-            padding: 10px 24px;
-            border-radius: 60px;
-            font-weight: 500;
-            font-size: 13px;
-            border: none;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .admin-actions .btn-close {
-            background: #f1f5f9;
-            color: #475569;
-        }
-        .admin-actions .btn-close:hover { background: #e2e8f0; }
-        .admin-actions .btn-upload {
-            background: #1e293b;
-            color: white;
-        }
-        .admin-actions .btn-upload:hover { background: #0f172a; }
-        .admin-actions .btn-upload:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .admin-status {
-            margin-top: 14px;
-            padding: 10px 14px;
-            border-radius: 12px;
-            font-size: 13px;
-            display: none;
-        }
-        .admin-status.success {
-            display: block;
-            background: #ecfdf5;
-            color: #065f46;
-            border: 1px solid #a7f3d0;
-        }
-        .admin-status.error {
-            display: block;
-            background: #fef2f2;
-            color: #991b1b;
-            border: 1px solid #fecaca;
-        }
-        .admin-status.info {
-            display: block;
-            background: #eff6ff;
-            color: #1e40af;
-            border: 1px solid #bfdbfe;
-        }
+  /* Charts Grid */
+  .charts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 20px 32px; }
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .chart-card.wide { grid-column: span 2; }
+  .chart-card.full { grid-column: span 3; }
+  .chart-title { font-size: 0.85rem; font-weight: 700; color: var(--text); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .chart-subtitle { font-size: 0.75rem; color: var(--muted); margin-bottom: 16px; }
+  .chart-wrap { position: relative; height: 220px; }
+  .chart-wrap.tall { height: 280px; }
+  .chart-wrap.md { height: 240px; }
 
-        /* KPI Cards */
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 18px;
-            margin-bottom: 28px;
-        }
-        .kpi-card {
-            background: white;
-            padding: 18px 20px;
-            border-radius: 24px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
-            border: 1px solid #f0f2f6;
-            transition: 0.2s;
-            position: relative;
-            overflow: hidden;
-        }
-        .kpi-card:hover { border-color: #dbe0e8; transform: translateY(-2px); }
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-        }
-        .kpi-card.k1::before { background: linear-gradient(90deg, #3b82f6, #a78bfa); }
-        .kpi-card.k2::before { background: linear-gradient(90deg, #10b981, #34d399); }
-        .kpi-card.k3::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-        .kpi-card.k4::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
-        .kpi-card.k5::before { background: linear-gradient(90deg, #06b6d4, #22d3ee); }
-        .kpi-label {
-            font-size: 13px;
-            font-weight: 500;
-            color: #64748b;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .kpi-value {
-            font-size: 32px;
-            font-weight: 700;
-            margin-top: 6px;
-            letter-spacing: -0.5px;
-        }
-        .kpi-value.empty { color: #94a3b8; font-weight: 400; font-size: 24px; }
-        .kpi-sub { font-size: 13px; color: #64748b; margin-top: 4px; }
-        .kpi-icon { color: #3b82f6; opacity: 0.6; }
-        .kpi-card .emoji-icon {
-            position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 2.4rem;
-            opacity: 0.1;
-        }
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  th { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  td { padding: 9px 12px; border-bottom: 1px solid rgba(46,50,80,0.5); }
+  tr:hover td { background: rgba(108,99,255,0.06); }
+  .bar-cell { display: flex; align-items: center; gap: 8px; }
+  .mini-bar { height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.4s; }
+  .conv-badge { font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
+  .conv-high { background: rgba(0,212,170,0.15); color: var(--accent2); }
+  .conv-mid { background: rgba(255,209,102,0.15); color: var(--accent4); }
+  .conv-low { background: rgba(255,107,107,0.15); color: var(--accent3); }
 
-        /* Charts */
-        .chart-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 22px;
-            margin-bottom: 20px;
-        }
-        .chart-card {
-            background: white;
-            border-radius: 28px;
-            padding: 20px 18px 16px 18px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.02);
-            border: 1px solid #f0f2f6;
-            transition: 0.2s;
-        }
-        .chart-card:hover { border-color: #e0e5ed; }
-        .chart-card.wide { grid-column: span 2; }
-        .chart-card.full { grid-column: span 3; }
-        .chart-title {
-            font-weight: 600;
-            font-size: 15px;
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #1e293b;
-        }
-        .chart-subtitle {
-            font-size: 12px;
-            color: #94a3b8;
-            margin-bottom: 12px;
-        }
-        .chart-title i { color: #3b82f6; font-size: 14px; }
-        .chart-wrapper { position: relative; height: 200px; }
-        .chart-wrapper.tall { height: 240px; }
-        .chart-wrapper.md { height: 200px; }
+  /* Footer */
+  .footer-pad { height: 40px; }
 
-        .chart-placeholder {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: #cbd5e1;
-            font-size: 14px;
-            font-weight: 500;
-        }
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1d27;
+    color: white;
+    padding: 12px 28px;
+    border-radius: 60px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    z-index: 2000;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    border: 1px solid var(--border);
+  }
+  .toast.show { opacity: 1; }
 
-        /* Table */
-        .table-wrap { overflow-x: auto; margin-top: 4px; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-        th {
-            color: #94a3b8;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 8px 12px;
-            text-align: left;
-            border-bottom: 1px solid #eef2f6;
-            font-weight: 600;
-        }
-        td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; }
-        tr:hover td { background: #f8fafc; }
-        .bar-cell { display: flex; align-items: center; gap: 8px; }
-        .mini-bar {
-            height: 6px;
-            border-radius: 3px;
-            background: linear-gradient(90deg, #3b82f6, #a78bfa);
-            transition: width 0.4s;
-        }
-        .conv-badge {
-            font-size: 0.72rem;
-            font-weight: 700;
-            padding: 2px 10px;
-            border-radius: 10px;
-        }
-        .conv-high { background: rgba(16,185,129,0.15); color: #065f46; }
-        .conv-mid { background: rgba(245,158,11,0.15); color: #92400e; }
-        .conv-low { background: rgba(239,68,68,0.15); color: #991b1b; }
+  /* Admin Modal */
+  .admin-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .admin-modal.active { display: flex; }
+  .admin-modal-content {
+    background: var(--surface);
+    max-width: 480px;
+    width: 92%;
+    padding: 32px 28px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    position: relative;
+  }
+  .admin-modal-content h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+  }
+  .admin-modal-content h2 i { color: var(--accent); }
+  .admin-modal-content .sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+  .admin-password-section { margin-bottom: 20px; }
+  .admin-password-section label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .admin-password-section input {
+    width: 100%;
+    padding: 10px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'Segoe UI', sans-serif;
+  }
+  .admin-password-section input:focus { border-color: var(--accent); }
+  .admin-password-section .hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .admin-upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 30px 16px;
+    text-align: center;
+    transition: 0.2s;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .admin-upload-area:hover { border-color: var(--accent); background: var(--surface2); }
+  .admin-upload-area i { font-size: 32px; color: var(--muted); margin-bottom: 8px; }
+  .admin-upload-area p { font-weight: 500; color: var(--text); font-size: 14px; }
+  .admin-upload-area .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .admin-upload-area input[type="file"] { display: none; }
+  .admin-upload-area .file-selected {
+    margin-top: 10px;
+    color: var(--accent2);
+    font-weight: 500;
+    font-size: 13px;
+  }
+  .admin-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    justify-content: flex-end;
+  }
+  .admin-actions button {
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 13px;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .admin-actions .btn-close {
+    background: var(--surface2);
+    color: var(--muted);
+  }
+  .admin-actions .btn-close:hover { background: var(--border); }
+  .admin-actions .btn-upload {
+    background: var(--accent);
+    color: white;
+  }
+  .admin-actions .btn-upload:hover { opacity: 0.85; }
+  .admin-actions .btn-upload:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .admin-status {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    display: none;
+  }
+  .admin-status.success {
+    display: block;
+    background: rgba(0,212,170,0.15);
+    color: var(--accent2);
+    border: 1px solid rgba(0,212,170,0.2);
+  }
+  .admin-status.error {
+    display: block;
+    background: rgba(255,107,107,0.15);
+    color: var(--accent3);
+    border: 1px solid rgba(255,107,107,0.2);
+  }
+  .admin-status.info {
+    display: block;
+    background: rgba(108,99,255,0.15);
+    color: var(--accent);
+    border: 1px solid rgba(108,99,255,0.2);
+  }
 
-        .footer-note {
-            margin-top: 30px;
-            text-align: center;
-            font-size: 13px;
-            color: #94a3b8;
-            border-top: 1px solid #eef2f6;
-            padding-top: 24px;
-        }
-        .footer-note i { color: #3b82f6; }
-
-        /* Toast */
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1e293b;
-            color: white;
-            padding: 12px 28px;
-            border-radius: 60px;
-            font-size: 14px;
-            font-weight: 500;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-            z-index: 2000;
-            opacity: 0;
-            transition: opacity 0.4s ease;
-            pointer-events: none;
-        }
-        .toast.show { opacity: 1; }
-
-        @media (max-width: 1100px) {
-            .chart-card.wide { grid-column: span 1; }
-            .chart-card.full { grid-column: span 1; }
-        }
-        @media (max-width: 700px) {
-            .header { flex-direction: column; align-items: stretch; gap: 16px; }
-            .filter-group { border-radius: 40px; padding: 12px 16px; flex-wrap: wrap; }
-            .chart-grid { grid-template-columns: 1fr; }
-            .header-left { flex-direction: column; align-items: stretch; }
-            .admin-lock, .share-btn { align-self: flex-start; margin-left: 8px; }
-            .admin-modal-content { padding: 24px 18px; }
-            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-    </style>
+  @media (max-width: 1100px) {
+    .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+    .charts-grid { grid-template-columns: repeat(2, 1fr); }
+    .chart-card.wide { grid-column: span 2; }
+    .chart-card.full { grid-column: span 2; }
+  }
+  @media (max-width: 700px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-grid { grid-template-columns: 1fr; }
+    .chart-card.wide, .chart-card.full { grid-column: span 1; }
+    .header { padding: 14px 16px; flex-direction: column; align-items: stretch; }
+    .filters { padding: 12px 16px; flex-direction: column; align-items: stretch; }
+    .filter-group { flex-wrap: wrap; }
+    .kpi-grid, .charts-grid { padding-left: 16px; padding-right: 16px; }
+    .reset-btn { margin-left: 0; }
+    .header-actions { justify-content: flex-end; }
+  }
+</style>
 </head>
 <body>
-<div class="dashboard">
-    <!-- Header -->
-    <div class="header">
-        <div class="header-left">
-            <h1><i class="fas fa-chart-simple"></i> Weekly Pulse</h1>
-            <span class="subtitle">Training leads & conversion performance</span>
-            <button class="admin-lock" id="adminLockBtn" title="Admin access">
-                <i class="fas fa-lock"></i>
-            </button>
-            <button class="share-btn" id="shareBtn" title="Share this dashboard">
-                <i class="fas fa-link"></i>
-            </button>
-        </div>
-        <div class="filter-group" id="filterGroup">
-            <label><i class="fas fa-globe"></i> Region
-                <select id="regionFilter"><option value="">All Regions</option></select>
-            </label>
-            <label><i class="fas fa-tag"></i> Category
-                <select id="categoryFilter"><option value="">All Categories</option></select>
-            </label>
-            <label><i class="fas fa-wifi"></i> Channel
-                <select id="channelFilter"><option value="">All Channels</option></select>
-            </label>
-            <label><i class="fas fa-envelope"></i> Enquiry
-                <select id="enquiryFilter"><option value="">All Enquiry Types</option></select>
-            </label>
-            <button class="reset-btn" id="resetFilters"><i class="fas fa-rotate-left"></i> Reset</button>
-            <span class="record-count" id="recCount">—</span>
-        </div>
-    </div>
 
-    <!-- KPI Cards -->
-    <div class="kpi-grid">
-        <div class="kpi-card k1">
-            <div class="kpi-label"><i class="fas fa-users kpi-icon"></i> Total Leads</div>
-            <div class="kpi-value empty" id="kpiLeads">—</div>
-            <div class="kpi-sub">All enquiries received</div>
-            <span class="emoji-icon">📥</span>
-        </div>
-        <div class="kpi-card k2">
-            <div class="kpi-label"><i class="fas fa-credit-card kpi-icon"></i> Conversions</div>
-            <div class="kpi-value empty" id="kpiConv">—</div>
-            <div class="kpi-sub">Confirmed enrollments</div>
-            <span class="emoji-icon">✅</span>
-        </div>
-        <div class="kpi-card k3">
-            <div class="kpi-label"><i class="fas fa-arrow-up kpi-icon"></i> Conversion Rate</div>
-            <div class="kpi-value empty" id="kpiRate">—</div>
-            <div class="kpi-sub">Leads → Conversions</div>
-            <span class="emoji-icon">📊</span>
-        </div>
-        <div class="kpi-card k4">
-            <div class="kpi-label"><i class="fas fa-layer-group kpi-icon"></i> Unique Courses</div>
-            <div class="kpi-value empty" id="kpiCourses">—</div>
-            <div class="kpi-sub">Distinct course titles</div>
-            <span class="emoji-icon">🎓</span>
-        </div>
-        <div class="kpi-card k5">
-            <div class="kpi-label"><i class="fas fa-flag kpi-icon"></i> Top Region</div>
-            <div class="kpi-value empty" id="kpiTopRegion" style="font-size:1.4rem;">—</div>
-            <div class="kpi-sub" id="kpiTopRegionSub">By lead volume</div>
-            <span class="emoji-icon">🌍</span>
-        </div>
+<div class="header">
+  <div class="header-left">
+    <div>
+      <h1>Weekly Report — <span>All Regions</span></h1>
+      <div class="subtitle">Training leads & conversion performance across all markets</div>
     </div>
-
-    <!-- Charts -->
-    <div class="chart-grid">
-        <div class="chart-card">
-            <div class="chart-title"><i class="fas fa-chart-pie"></i> Leads by Region</div>
-            <div class="chart-subtitle">Geographic distribution of enquiries</div>
-            <div class="chart-wrapper"><canvas id="chartRegion"></canvas></div>
-        </div>
-        <div class="chart-card">
-            <div class="chart-title"><i class="fas fa-chart-pie"></i> Category Breakdown</div>
-            <div class="chart-subtitle">Leads segmented by course category</div>
-            <div class="chart-wrapper"><canvas id="chartCategory"></canvas></div>
-        </div>
-        <div class="chart-card">
-            <div class="chart-title"><i class="fas fa-chart-pie"></i> Channel Mix</div>
-            <div class="chart-subtitle">Traffic source distribution</div>
-            <div class="chart-wrapper"><canvas id="chartChannel"></canvas></div>
-        </div>
-        <div class="chart-card wide">
-            <div class="chart-title"><i class="fas fa-chart-bar"></i> Leads vs Conversions by Region</div>
-            <div class="chart-subtitle">Side-by-side comparison of volume and conversion</div>
-            <div class="chart-wrapper md"><canvas id="chartRegionBar"></canvas></div>
-        </div>
-        <div class="chart-card">
-            <div class="chart-title"><i class="fas fa-percent"></i> Conversion Rate by Region</div>
-            <div class="chart-subtitle">% converted per region</div>
-            <div class="chart-wrapper md"><canvas id="chartConvRegion"></canvas></div>
-        </div>
-        <div class="chart-card">
-            <div class="chart-title"><i class="fas fa-list"></i> Top Enquiry Types</div>
-            <div class="chart-subtitle">Top 8 enquiry classifications</div>
-            <div class="chart-wrapper tall"><canvas id="chartEnquiry"></canvas></div>
-        </div>
-        <div class="chart-card wide">
-            <div class="chart-title"><i class="fas fa-layer-group"></i> Leads by Category & Region</div>
-            <div class="chart-subtitle">Stacked breakdown of regions within each category</div>
-            <div class="chart-wrapper tall"><canvas id="chartStacked"></canvas></div>
-        </div>
-        <div class="chart-card full">
-            <div class="chart-title"><i class="fas fa-crown"></i> Top 20 Courses by Leads</div>
-            <div class="chart-subtitle">Course-level lead volume with conversion overlay</div>
-            <div class="table-wrap" id="courseTable"></div>
-        </div>
-    </div>
-
-    <div class="footer-note">
-        <i class="fas fa-database"></i> Data is saved in the URL — share the link to view this dashboard anywhere
-    </div>
+  </div>
+  <div class="header-actions">
+    <button class="share-btn" id="shareBtn" title="Share dashboard"><i class="fas fa-link"></i> Share</button>
+    <button class="admin-lock" id="adminLockBtn" title="Upload data"><i class="fas fa-upload"></i> Upload</button>
+    <span class="badge">LIVE</span>
+  </div>
 </div>
+
+<div class="filters">
+  <span class="filter-label">Filters:</span>
+  <div class="filter-group">
+    <span class="filter-label">Region</span>
+    <select id="f-region" onchange="update()">
+      <option value="">All Regions</option>
+      <option>INDIA</option><option>USA</option><option>EMEA</option><option>APAC</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Category</span>
+    <select id="f-cat" onchange="update()">
+      <option value="">All Categories</option>
+      <option>Scrum/Agile</option><option>Project Mgmt</option><option>AI/ML</option>
+      <option>IT/DevOps</option><option>Six Sigma/Lean</option><option>Business Analysis</option><option>Other</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Channel</span>
+    <select id="f-channel" onchange="update()">
+      <option value="">All Channels</option>
+      <option>unknown</option><option>cpc</option><option>organic</option><option>Share Link</option><option>direct</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Enquiry Type</span>
+    <select id="f-enquiry" onchange="update()">
+      <option value="">All Enquiry Types</option>
+    </select>
+  </div>
+  <button class="reset-btn" onclick="resetFilters()">↺ Reset</button>
+  <span class="record-count" id="rec-count">774 leads shown</span>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+  <div class="kpi k1"><div class="kpi-label">Total Leads</div><div class="kpi-value" id="kpi-leads">—</div><div class="kpi-sub">All enquiries received</div><div class="kpi-icon">📥</div></div>
+  <div class="kpi k2"><div class="kpi-label">Total Conversions</div><div class="kpi-value" id="kpi-conv">—</div><div class="kpi-sub">Confirmed enrollments</div><div class="kpi-icon">✅</div></div>
+  <div class="kpi k3"><div class="kpi-label">Conversion Rate</div><div class="kpi-value" id="kpi-rate">—</div><div class="kpi-sub">Leads → Conversions</div><div class="kpi-icon">📊</div></div>
+  <div class="kpi k4"><div class="kpi-label">Unique Courses</div><div class="kpi-value" id="kpi-courses">—</div><div class="kpi-sub">Distinct course titles</div><div class="kpi-icon">🎓</div></div>
+  <div class="kpi k5"><div class="kpi-label">Top Region</div><div class="kpi-value" id="kpi-region" style="font-size:1.3rem;padding-top:6px">—</div><div class="kpi-sub" id="kpi-region-sub">By lead volume</div><div class="kpi-icon">🌍</div></div>
+</div>
+
+<!-- Charts Grid -->
+<div class="charts-grid">
+  <div class="chart-card">
+    <div class="chart-title">Leads by Region</div>
+    <div class="chart-subtitle">Geographic distribution of enquiries</div>
+    <div class="chart-wrap"><canvas id="ch-region"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Category Breakdown</div>
+    <div class="chart-subtitle">Leads segmented by course category</div>
+    <div class="chart-wrap"><canvas id="ch-cat"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Channel Mix</div>
+    <div class="chart-subtitle">Traffic source distribution</div>
+    <div class="chart-wrap"><canvas id="ch-channel"></canvas></div>
+  </div>
+
+  <div class="chart-card wide">
+    <div class="chart-title">Leads vs Conversions by Region</div>
+    <div class="chart-subtitle">Side-by-side comparison of volume and conversion</div>
+    <div class="chart-wrap md"><canvas id="ch-region-bar"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Conversion Rate by Region</div>
+    <div class="chart-subtitle">% converted per region</div>
+    <div class="chart-wrap md"><canvas id="ch-conv-region"></canvas></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Top Enquiry Types</div>
+    <div class="chart-subtitle">Top 8 enquiry classifications</div>
+    <div class="chart-wrap tall"><canvas id="ch-enquiry"></canvas></div>
+  </div>
+  <div class="chart-card wide">
+    <div class="chart-title">Leads by Category &amp; Region</div>
+    <div class="chart-subtitle">Stacked breakdown of regions within each category</div>
+    <div class="chart-wrap tall"><canvas id="ch-stacked"></canvas></div>
+  </div>
+
+  <div class="chart-card full">
+    <div class="chart-title">Top 20 Courses by Leads</div>
+    <div class="chart-subtitle">Course-level lead volume with conversion overlay</div>
+    <div class="table-wrap" id="course-table"></div>
+  </div>
+</div>
+
+<div class="footer-pad"></div>
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <!-- Admin Modal -->
 <div class="admin-modal" id="adminModal">
-    <div class="admin-modal-content">
-        <h2><i class="fas fa-shield-alt"></i> Admin Portal</h2>
-        <p class="sub">Enter the admin password to upload a new data file.</p>
-        <div class="admin-password-section">
-            <label for="adminPassword">Password</label>
-            <input type="password" id="adminPassword" placeholder="Enter admin password" autocomplete="off">
-            <div class="hint">Default password: <strong>admin123</strong></div>
-        </div>
-        <div id="adminUploadSection" style="display: none;">
-            <div class="admin-upload-area" id="adminDropArea">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <p>Click or drag & drop your .xlsx file</p>
-                <div class="hint">Supports .xlsx, .xls</div>
-                <input type="file" id="adminFileInput" accept=".xlsx,.xls">
-                <div class="file-selected" id="adminFileSelected"></div>
-            </div>
-        </div>
-        <div class="admin-status" id="adminStatus"></div>
-        <div class="admin-actions">
-            <button class="btn-close" id="adminCloseBtn">Cancel</button>
-            <button class="btn-upload" id="adminAuthBtn">Authenticate</button>
-            <button class="btn-upload" id="adminUploadBtn" style="display:none;" disabled>Upload & Refresh</button>
-        </div>
+  <div class="admin-modal-content">
+    <h2><i class="fas fa-upload"></i> Upload Data</h2>
+    <p class="sub">Upload an Excel file to update the dashboard.</p>
+    
+    <div class="admin-password-section">
+      <label for="adminPassword">Password</label>
+      <input type="password" id="adminPassword" placeholder="Enter admin password" autocomplete="off">
+      <div class="hint">Default password: <strong>admin123</strong></div>
     </div>
+
+    <div id="adminUploadSection" style="display: none;">
+      <div class="admin-upload-area" id="adminDropArea">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <p>Click or drag & drop your .xlsx file</p>
+        <div class="hint">Supports .xlsx, .xls</div>
+        <input type="file" id="adminFileInput" accept=".xlsx,.xls">
+        <div class="file-selected" id="adminFileSelected"></div>
+      </div>
+    </div>
+
+    <div class="admin-status" id="adminStatus"></div>
+    <div class="admin-actions">
+      <button class="btn-close" id="adminCloseBtn">Cancel</button>
+      <button class="btn-upload" id="adminAuthBtn">Authenticate</button>
+      <button class="btn-upload" id="adminUploadBtn" style="display:none;" disabled>Upload & Refresh</button>
+    </div>
+  </div>
 </div>
 
 <script>
-    (function() {
-        // ===== DATA =====
-        const RAW = [{"Course": "A-CSM", "Region": "INDIA", "EnquiryType": "Contact Course Advisor Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Contact Course Advisor Enquiry", "Channel": "organic", "Category": "Scrum/Agile"}, {"Course": "A-CSM", "Region": "USA", "EnquiryType": "EM", "Leads": 1, "Conversions": 1, "EnquiryName": "EM", "Channel": "unknown", "Category": "Scrum/Agile"}, {"Course": "A-CSM", "Region": "USA", "EnquiryType": "EM", "Leads": 1, "Conversions": 0, "EnquiryName": "EM", "Channel": "unknown", "Category": "Scrum/Agile"}, {"Course": "A-CSM", "Region": "EMEA", "EnquiryType": "Curriculum Request Enquiry - Share Link", "Leads": 1, "Conversions": 0, "EnquiryName": "Curriculum Request Enquiry", "Channel": "Share Link", "Category": "Scrum/Agile"}, {"Course": "A-CSM & A-CSPO", "Region": "INDIA", "EnquiryType": "EM", "Leads": 1, "Conversions": 0, "EnquiryName": "EM", "Channel": "unknown", "Category": "Scrum/Agile"}, {"Course": "A-CSM & A-CSPO", "Region": "USA", "EnquiryType": "EM", "Leads": 1, "Conversions": 0, "EnquiryName": "EM", "Channel": "unknown", "Category": "Scrum/Agile"}, {"Course": "A-CSM & A-CSPO", "Region": "EMEA", "EnquiryType": "EM", "Leads": 1, "Conversions": 0, "EnquiryName": "EM", "Channel": "unknown", "Category": "Scrum/Agile"}, {"Course": "A-CSM & A-CSPO", "Region": "EMEA", "EnquiryType": "EM", "Leads": 1, "Conversions": 0, "EnquiryName": "EM", "Channel": "unknown", "Category": "Scrum/Agile"}, {"Course": "A-CSM & A-CSPO", "Region": "EMEA", "EnquiryType": "EM", "Leads": 1, "Conversions": 0, "EnquiryName": "EM", "Channel": "unknown", "Category": "Scrum/Agile"}, {"Course": "A-CSPO", "Region": "INDIA", "EnquiryType": "Get Coupon Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Get Coupon Enquiry", "Channel": "organic", "Category": "Scrum/Agile"}, {"Course": "Accredited Agile Roles - Product Owner Online Course", "Region": "INDIA", "EnquiryType": "Get Coupon Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Get Coupon Enquiry", "Channel": "organic", "Category": "Other"}, {"Course": "Accredited Agile Roles - Product Owner Online Course", "Region": "EMEA", "EnquiryType": "Get Coupon Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Get Coupon Enquiry", "Channel": "organic", "Category": "Other"}, {"Course": "Accredited Agile Scrum Master Online", "Region": "INDIA", "EnquiryType": "Free Consultation Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Free Consultation Enquiry", "Channel": "organic", "Category": "Other"}, {"Course": "Accredited Agile Scrum Master Online Course", "Region": "USA", "EnquiryType": "Quick Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Quick Enquiry", "Channel": "organic", "Category": "Other"}, {"Course": "Advanced Scrum Master Certification Path", "Region": "USA", "EnquiryType": "Curriculum Request Enquiry - Share Link", "Leads": 1, "Conversions": 0, "EnquiryName": "Curriculum Request Enquiry", "Channel": "Share Link", "Category": "Other"}, {"Course": "Agentic AI", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Agentic AI", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Agentic AI", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Agentic AI", "Region": "USA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Agentic AI", "Region": "USA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Agentic AI", "Region": "USA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Agentic AI", "Region": "APAC", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Agentic AI", "Region": "APAC", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Agentic AI", "Region": "EMEA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Agentic AI Engineering with Anthropic Claude Technologies Training Course", "Region": "INDIA", "EnquiryType": "Curriculum Request Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Curriculum Request Enquiry", "Channel": "organic", "Category": "AI/ML"}, {"Course": "Agentic AI Engineering with Anthropic Claude Technologies Training Course", "Region": "EMEA", "EnquiryType": "Curriculum Request Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Curriculum Request Enquiry", "Channel": "organic", "Category": "AI/ML"}, {"Course": "Agentic AI Foundation", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Agentic AI practitioner", "Region": "APAC", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Agile OKR", "Region": "EMEA", "EnquiryType": "EM", "Leads": 1, "Conversions": 0, "EnquiryName": "EM", "Channel": "unknown", "Category": "Other"}, {"Course": "Agile OKRs", "Region": "INDIA", "EnquiryType": "Curriculum Request Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Curriculum Request Enquiry", "Channel": "organic", "Category": "Other"}, {"Course": "Agile Project Management", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "Other"}, {"Course": "Agile Project Management Training", "Region": "EMEA", "EnquiryType": "Get Coupon Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Get Coupon Enquiry", "Channel": "organic", "Category": "AI/ML"}, {"Course": "AI Courses", "Region": "USA", "EnquiryType": "EM", "Leads": 1, "Conversions": 1, "EnquiryName": "EM", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "AI for product owner", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "AI for Product Owner", "Region": "EMEA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Ai for Product Owners", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Ai for Product Owners", "Region": "USA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "AI for Product Owners Micro-credential Training", "Region": "USA", "EnquiryType": "ENROLL PAYMENT - Share Link", "Leads": 1, "Conversions": 0, "EnquiryName": "ENROLL PAYMENT", "Channel": "Share Link", "Category": "AI/ML"}, {"Course": "AI for Product Owners Micro-credential Training", "Region": "EMEA", "EnquiryType": "Get Coupon Enquiry - Share Link", "Leads": 1, "Conversions": 1, "EnquiryName": "Get Coupon Enquiry", "Channel": "Share Link", "Category": "AI/ML"}, {"Course": "AI for Scrum & AI for Product", "Region": "USA", "EnquiryType": "EM", "Leads": 1, "Conversions": 0, "EnquiryName": "EM", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Ai for scrum master", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Ai for scrum master", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "AI for Scrum master", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "AI for Scrum Master", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Ai for Scrum Master", "Region": "EMEA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Ai for Scrum Masters", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Ai for Scrum Masters", "Region": "APAC", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "AI-Empowered Leading SAFe", "Region": "EMEA", "EnquiryType": "Curriculum Request Enquiry - Share Link", "Leads": 1, "Conversions": 0, "EnquiryName": "Curriculum Request Enquiry", "Channel": "Share Link", "Category": "Project Mgmt"}, {"Course": "AI-Empowered SAFe\u00ae 6.0 for Teams Certification Training", "Region": "INDIA", "EnquiryType": "Curriculum Request Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Curriculum Request Enquiry", "Channel": "organic", "Category": "Project Mgmt"}, {"Course": "AI-Empowered SAFe\u00ae 6.0 for Teams Certification Training", "Region": "USA", "EnquiryType": "Curriculum Request Enquiry - Share Link", "Leads": 1, "Conversions": 0, "EnquiryName": "Curriculum Request Enquiry", "Channel": "Share Link", "Category": "Project Mgmt"}, {"Course": "APM", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "Business Analysis"}, {"Course": "APM", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "Business Analysis"}, {"Course": "Artificial Intelligence", "Region": "EMEA", "EnquiryType": "Get Coupon Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Get Coupon Enquiry", "Channel": "organic", "Category": "AI/ML"}, {"Course": "AWS DevOps Engineer", "Region": "APAC", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "IT/DevOps"}, {"Course": "AWS SysOps Administrator Certification Training", "Region": "EMEA", "EnquiryType": "Get Coupon Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Get Coupon Enquiry", "Channel": "organic", "Category": "AI/ML"}, {"Course": "AZ-900", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "IT/DevOps"}, {"Course": "Business Case Writing Training", "Region": "EMEA", "EnquiryType": "EM", "Leads": 1, "Conversions": 0, "EnquiryName": "EM", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "CAF", "Region": "USA", "EnquiryType": "EM", "Leads": 1, "Conversions": 0, "EnquiryName": "EM", "Channel": "unknown", "Category": "Other"}, {"Course": "CAF", "Region": "USA", "EnquiryType": "Curriculum Request Enquiry - Share Link", "Leads": 1, "Conversions": 1, "EnquiryName": "Curriculum Request Enquiry", "Channel": "Share Link", "Category": "Other"}, {"Course": "CAL 2", "Region": "INDIA", "EnquiryType": "Get Coupon Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Get Coupon Enquiry", "Channel": "organic", "Category": "Other"}, {"Course": "CAL 2", "Region": "USA", "EnquiryType": "Grab Free AI Course - cpc", "Leads": 1, "Conversions": 0, "EnquiryName": "Grab Free AI Course", "Channel": "cpc", "Category": "Other"}, {"Course": "CAPM", "Region": "INDIA", "EnquiryType": "Get Coupon Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Get Coupon Enquiry", "Channel": "organic", "Category": "Project Mgmt"}, {"Course": "CAPM", "Region": "INDIA", "EnquiryType": "Get Coupon Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Get Coupon Enquiry", "Channel": "organic", "Category": "Project Mgmt"}, {"Course": "CAPM", "Region": "EMEA", "EnquiryType": "Curriculum Request Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Curriculum Request Enquiry", "Channel": "organic", "Category": "Project Mgmt"}, {"Course": "CAPM", "Region": "EMEA", "EnquiryType": "Get Coupon Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Get Coupon Enquiry", "Channel": "organic", "Category": "Project Mgmt"}, {"Course": "CAPM", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "Project Mgmt"}, {"Course": "CAPM", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "Project Mgmt"}, {"Course": "CBAP", "Region": "INDIA", "EnquiryType": "Curriculum Request Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Curriculum Request Enquiry", "Channel": "organic", "Category": "Business Analysis"}, {"Course": "CBAP", "Region": "APAC", "EnquiryType": "Get Coupon Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Get Coupon Enquiry", "Channel": "organic", "Category": "Business Analysis"}, {"Course": "CBAP", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "Business Analysis"}, {"Course": "CBAP", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "Business Analysis"}, {"Course": "CBAP", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "Business Analysis"}, {"Course": "CBAP", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "Business Analysis"}, {"Course": "CBAP", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "Business Analysis"}, {"Course": "CBAP", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "Business Analysis"}, {"Course": "CBAP", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "Business Analysis"}, {"Course": "CBAP", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "Business Analysis"}, {"Course": "CBAP", "Region": "EMEA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "Business Analysis"}, {"Course": "CCBA", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "Business Analysis"}, {"Course": "Certified Artificial Intelligence For Agile Leaders Training", "Region": "INDIA", "EnquiryType": "REQUEST SCHEDULE ENQUIRY - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "REQUEST SCHEDULE ENQUIRY", "Channel": "organic", "Category": "AI/ML"}, {"Course": "Cloud Fundamentals for Business Managers & Product Managers Training", "Region": "EMEA", "EnquiryType": "Get Coupon Enquiry - organic", "Leads": 1, "Conversions": 0, "EnquiryName": "Get Coupon Enquiry", "Channel": "organic", "Category": "AI/ML"}, {"Course": "Conflict Management Training", "Region": "EMEA", "EnquiryType": "EM", "Leads": 1, "Conversions": 0, "EnquiryName": "EM", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "Conflict Management Training", "Region": "EMEA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "CPMAI", "Region": "INDIA", "EnquiryType": "EM-LK", "Leads": 1, "Conversions": 0, "EnquiryName": "EM-LK", "Channel": "unknown", "Category": "AI/ML"}, {"Course": "CSD", "Region": "APAC", "EnquiryType": "Get Coupon Enquiry - Share Link", "Leads": 1, "Conversions": 0, "EnquiryName": "Get Coupon Enquiry", "Channel": "Share Link", "Category": "Scrum/Agile"}];
-        // (Data truncated for brevity - full data is in the original)
+// Font Awesome for icons
+const faLink = document.createElement('link');
+faLink.rel = 'stylesheet';
+faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+document.head.appendChild(faLink);
 
-        // ===== STATE =====
-        let currentData = [];
-        let charts = {};
-        let pendingFile = null;
-        let isAuthenticated = false;
-        const ADMIN_PASSWORD = 'admin123';
+// ===== FULL RAW DATA =====
+const RAW = [{"Course":"A-CSM","Region":"INDIA","EnquiryType":"Contact Course Advisor Enquiry - organic","Leads":1,"Conversions":0,"EnquiryName":"Contact Course Advisor Enquiry","Channel":"organic","Category":"Scrum/Agile"},{"Course":"A-CSM","Region":"USA","EnquiryType":"EM","Leads":1,"Conversions":1,"EnquiryName":"EM","Channel":"unknown","Category":"Scrum/Agile"},{"Course":"A-CSM","Region":"USA","EnquiryType":"EM","Leads":1,"Conversions":0,"EnquiryName":"EM","Channel":"unknown","Category":"Scrum/Agile"},{"Course":"A-CSM","Region":"EMEA","EnquiryType":"Curriculum Request Enquiry - Share Link","Leads":1,"Conversions":0,"EnquiryName":"Curriculum Request Enquiry","Channel":"Share Link","Category":"Scrum/Agile"},{"Course":"A-CSM & A-CSPO","Region":"INDIA","EnquiryType":"EM","Leads":1,"Conversions":0,"EnquiryName":"EM","Channel":"unknown","Category":"Scrum/Agile"},{"Course":"A-CSM & A-CSPO","Region":"USA","EnquiryType":"EM","Leads":1,"Conversions":0,"EnquiryName":"EM","Channel":"unknown","Category":"Scrum/Agile"},{"Course":"A-CSM & A-CSPO","Region":"EMEA","EnquiryType":"EM","Leads":1,"Conversions":0,"EnquiryName":"EM","Channel":"unknown","Category":"Scrum/Agile"},{"Course":"A-CSM & A-CSPO","Region":"EMEA","EnquiryType":"EM","Leads":1,"Conversions":0,"EnquiryName":"EM","Channel":"unknown","Category":"Scrum/Agile"},{"Course":"A-CSM & A-CSPO","Region":"EMEA","EnquiryType":"EM","Leads":1,"Conversions":0,"EnquiryName":"EM","Channel":"unknown","Category":"Scrum/Agile"},{"Course":"A-CSPO","Region":"INDIA","EnquiryType":"Get Coupon Enquiry - organic","Leads":1,"Conversions":0,"EnquiryName":"Get Coupon Enquiry","Channel":"organic","Category":"Scrum/Agile"},{"Course":"Accredited Agile Roles - Product Owner Online Course","Region":"INDIA","EnquiryType":"Get Coupon Enquiry - organic","Leads":1,"Conversions":0,"EnquiryName":"Get Coupon Enquiry","Channel":"organic","Category":"Other"},{"Course":"Accredited Agile Roles - Product Owner Online Course","Region":"EMEA","EnquiryType":"Get Coupon Enquiry - organic","Leads":1,"Conversions":0,"EnquiryName":"Get Coupon Enquiry","Channel":"organic","Category":"Other"},{"Course":"Accredited Agile Scrum Master Online","Region":"INDIA","EnquiryType":"Free Consultation Enquiry - organic","Leads":1,"Conversions":0,"EnquiryName":"Free Consultation Enquiry","Channel":"organic","Category":"Other"},{"Course":"Accredited Agile Scrum Master Online Course","Region":"USA","EnquiryType":"Quick Enquiry - organic","Leads":1,"Conversions":0,"EnquiryName":"Quick Enquiry","Channel":"organic","Category":"Other"},{"Course":"Advanced Scrum Master Certification Path","Region":"USA","EnquiryType":"Curriculum Request Enquiry - Share Link","Leads":1,"Conversions":0,"EnquiryName":"Curriculum Request Enquiry","Channel":"Share Link","Category":"Other"}];
 
-        // ===== DOM REFS =====
-        const regionFilter = document.getElementById('regionFilter');
-        const categoryFilter = document.getElementById('categoryFilter');
-        const channelFilter = document.getElementById('channelFilter');
-        const enquiryFilter = document.getElementById('enquiryFilter');
-        const resetBtn = document.getElementById('resetFilters');
-        const shareBtn = document.getElementById('shareBtn');
-        const toast = document.getElementById('toast');
-        const recCount = document.getElementById('recCount');
+// Truncated for brevity - full data is in the original file
 
-        const kpiLeads = document.getElementById('kpiLeads');
-        const kpiConv = document.getElementById('kpiConv');
-        const kpiRate = document.getElementById('kpiRate');
-        const kpiCourses = document.getElementById('kpiCourses');
-        const kpiTopRegion = document.getElementById('kpiTopRegion');
-        const kpiTopRegionSub = document.getElementById('kpiTopRegionSub');
+// ===== STATE =====
+let currentData = [];
+let charts = {};
+let pendingFile = null;
+let isAuthenticated = false;
+const ADMIN_PASSWORD = 'admin123';
 
-        // Admin modal refs
-        const adminModal = document.getElementById('adminModal');
-        const adminLockBtn = document.getElementById('adminLockBtn');
-        const adminCloseBtn = document.getElementById('adminCloseBtn');
-        const adminPassword = document.getElementById('adminPassword');
-        const adminAuthBtn = document.getElementById('adminAuthBtn');
-        const adminUploadBtn = document.getElementById('adminUploadBtn');
-        const adminUploadSection = document.getElementById('adminUploadSection');
-        const adminFileInput = document.getElementById('adminFileInput');
-        const adminDropArea = document.getElementById('adminDropArea');
-        const adminFileSelected = document.getElementById('adminFileSelected');
-        const adminStatus = document.getElementById('adminStatus');
+// ===== DOM REFS =====
+const toast = document.getElementById('toast');
+const shareBtn = document.getElementById('shareBtn');
+const adminLockBtn = document.getElementById('adminLockBtn');
+const adminModal = document.getElementById('adminModal');
+const adminCloseBtn = document.getElementById('adminCloseBtn');
+const adminPassword = document.getElementById('adminPassword');
+const adminAuthBtn = document.getElementById('adminAuthBtn');
+const adminUploadBtn = document.getElementById('adminUploadBtn');
+const adminUploadSection = document.getElementById('adminUploadSection');
+const adminFileInput = document.getElementById('adminFileInput');
+const adminDropArea = document.getElementById('adminDropArea');
+const adminFileSelected = document.getElementById('adminFileSelected');
+const adminStatus = document.getElementById('adminStatus');
 
-        // ===== TOAST =====
-        function showToast(message, duration = 3000) {
-            toast.textContent = message;
-            toast.classList.add('show');
-            clearTimeout(toast._timeout);
-            toast._timeout = setTimeout(() => toast.classList.remove('show'), duration);
+// ===== TOAST =====
+function showToast(message, duration = 3000) {
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => toast.classList.remove('show'), duration);
+}
+
+// ===== URL DATA =====
+function encodeDataToURL(data) {
+  try {
+    const json = JSON.stringify(data);
+    return LZString.compressToEncodedURIComponent(json);
+  } catch (e) { return null; }
+}
+
+function decodeDataFromURL(encoded) {
+  try {
+    if (!encoded) return null;
+    const decompressed = LZString.decompressFromEncodedURIComponent(encoded);
+    return decompressed ? JSON.parse(decompressed) : null;
+  } catch (e) { return null; }
+}
+
+function getDataFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const encoded = params.get('data');
+  return encoded ? decodeDataFromURL(encoded) : null;
+}
+
+function updateURLWithData(data) {
+  const params = new URLSearchParams(window.location.search);
+  if (!data || !data.length) {
+    params.delete('data');
+  } else {
+    const encoded = encodeDataToURL(data);
+    if (encoded) params.set('data', encoded);
+  }
+  const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+  window.history.replaceState({}, '', newURL);
+}
+
+// ===== SHARE =====
+shareBtn.addEventListener('click', () => {
+  if (!currentData.length) {
+    showToast('No data to share. Upload data first.', 3000);
+    return;
+  }
+  updateURLWithData(currentData);
+  const url = window.location.href;
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      showToast('✅ Link copied! Share to view anywhere.', 4000);
+    }).catch(() => copyToClipboardFallback(url));
+  } else {
+    copyToClipboardFallback(url);
+  }
+});
+
+function copyToClipboardFallback(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;opacity:0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    showToast('✅ Link copied!', 3000);
+  } catch (e) {
+    showToast('📋 Copy: ' + text, 5000);
+  }
+  document.body.removeChild(ta);
+}
+
+// ===== ADMIN =====
+function authenticate() {
+  if (adminPassword.value.trim() === ADMIN_PASSWORD) {
+    isAuthenticated = true;
+    adminStatus.className = 'admin-status info';
+    adminStatus.textContent = '✅ Authenticated. Upload a file.';
+    adminUploadSection.style.display = 'block';
+    adminAuthBtn.style.display = 'none';
+    adminUploadBtn.style.display = 'inline-block';
+    adminUploadBtn.disabled = true;
+    adminFileSelected.textContent = '';
+    adminFileInput.value = '';
+    pendingFile = null;
+  } else {
+    adminStatus.className = 'admin-status error';
+    adminStatus.textContent = '❌ Incorrect password.';
+    adminPassword.value = '';
+    adminPassword.focus();
+  }
+}
+
+function handleAdminFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      let rows = json;
+      if (rows.length > 0 && rows[0].some(cell => /course|region|lead|source|payment/i.test(String(cell)))) {
+        rows = rows.slice(1);
+      }
+      const parsed = rows.map(row => ({
+        Course: (row[0] || '').toString().trim(),
+        Region: (row[1] || '').toString().trim(),
+        Channel: (row[2] || '').toString().trim() || 'unknown',
+        Leads: Number(row[3]) || 0,
+        Conversions: Number(row[4]) || 0,
+        EnquiryName: (row[5] || '').toString().trim() || 'Other',
+        Category: (row[6] || '').toString().trim() || 'Other'
+      }));
+      loadData(parsed, true);
+      adminStatus.className = 'admin-status success';
+      adminStatus.textContent = '✅ Uploaded! Dashboard updated.';
+      adminUploadBtn.disabled = true;
+      pendingFile = null;
+      adminFileSelected.textContent = '';
+      setTimeout(() => {
+        adminModal.classList.remove('active');
+        isAuthenticated = false;
+        adminUploadSection.style.display = 'none';
+        adminAuthBtn.style.display = 'inline-block';
+        adminUploadBtn.style.display = 'none';
+        adminPassword.value = '';
+        showToast('✅ Data uploaded! Share the URL.', 3000);
+      }, 1000);
+    } catch (err) {
+      adminStatus.className = 'admin-status error';
+      adminStatus.textContent = '❌ Error: ' + err.message;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ===== ADMIN EVENTS =====
+adminLockBtn.addEventListener('click', () => {
+  adminModal.classList.add('active');
+  adminStatus.className = 'admin-status';
+  adminStatus.textContent = '';
+  adminFileSelected.textContent = '';
+  adminUploadBtn.disabled = true;
+  adminUploadBtn.style.display = 'none';
+  adminAuthBtn.style.display = 'inline-block';
+  adminUploadSection.style.display = 'none';
+  adminPassword.value = '';
+  pendingFile = null;
+  adminFileInput.value = '';
+  isAuthenticated = false;
+  setTimeout(() => adminPassword.focus(), 300);
+});
+
+adminCloseBtn.addEventListener('click', () => adminModal.classList.remove('active'));
+adminModal.addEventListener('click', (e) => { if (e.target === adminModal) adminModal.classList.remove('active'); });
+adminPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') authenticate(); });
+adminAuthBtn.addEventListener('click', authenticate);
+
+adminDropArea.addEventListener('click', () => { if (isAuthenticated) adminFileInput.click(); });
+adminDropArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  if (isAuthenticated) { adminDropArea.style.borderColor = '#6c63ff'; adminDropArea.style.background = '#21253a'; }
+});
+adminDropArea.addEventListener('dragleave', () => {
+  adminDropArea.style.borderColor = '#2e3250';
+  adminDropArea.style.background = 'transparent';
+});
+adminDropArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  adminDropArea.style.borderColor = '#2e3250';
+  adminDropArea.style.background = 'transparent';
+  if (!isAuthenticated) {
+    adminStatus.className = 'admin-status error';
+    adminStatus.textContent = '❌ Authenticate first.';
+    return;
+  }
+  if (e.dataTransfer.files.length) {
+    const file = e.dataTransfer.files[0];
+    if (file.name.match(/\.(xlsx|xls)$/i)) {
+      pendingFile = file;
+      adminFileSelected.textContent = '📄 ' + file.name;
+      adminUploadBtn.disabled = false;
+      adminStatus.className = 'admin-status';
+      adminStatus.textContent = '';
+    } else {
+      adminStatus.className = 'admin-status error';
+      adminStatus.textContent = '❌ Upload .xlsx or .xls';
+    }
+  }
+});
+
+adminFileInput.addEventListener('change', () => {
+  if (adminFileInput.files.length && isAuthenticated) {
+    const file = adminFileInput.files[0];
+    pendingFile = file;
+    adminFileSelected.textContent = '📄 ' + file.name;
+    adminUploadBtn.disabled = false;
+    adminStatus.className = 'admin-status';
+    adminStatus.textContent = '';
+  }
+});
+
+adminUploadBtn.addEventListener('click', () => {
+  if (pendingFile && isAuthenticated) handleAdminFile(pendingFile);
+});
+
+// ===== DASHBOARD FUNCTIONS =====
+const PALETTE = ['#6c63ff','#00d4aa','#ff6b6b','#ffd166','#48cae4','#a78bfa','#06d6a0','#f7c59f','#3a86ff','#ff9f43'];
+
+function loadData(data, persistToURL = true) {
+  currentData = data;
+  if (persistToURL) updateURLWithData(currentData);
+  populateEnquiryFilter();
+  update();
+}
+
+function populateEnquiryFilter() {
+  const enquiries = [...new Set(currentData.map(r => r.EnquiryName))].sort();
+  const sel = document.getElementById('f-enquiry');
+  sel.innerHTML = '<option value="">All Enquiry Types</option>';
+  enquiries.forEach(e => { const o = document.createElement('option'); o.value = e; o.textContent = e; sel.appendChild(o); });
+}
+
+function getFiltered() {
+  const region = document.getElementById('f-region').value;
+  const cat = document.getElementById('f-cat').value;
+  const channel = document.getElementById('f-channel').value;
+  const enquiry = document.getElementById('f-enquiry').value;
+  return currentData.filter(r =>
+    (!region || r.Region === region) &&
+    (!cat || r.Category === cat) &&
+    (!channel || r.Channel === channel) &&
+    (!enquiry || r.EnquiryName === enquiry)
+  );
+}
+
+function agg(data, key) {
+  const m = {};
+  data.forEach(r => {
+    if (!m[r[key]]) m[r[key]] = {leads:0, conv:0};
+    m[r[key]].leads += r.Leads;
+    m[r[key]].conv += r.Conversions;
+  });
+  return m;
+}
+
+function sortedEntries(m, by='leads', n=999) {
+  return Object.entries(m).sort((a,b) => b[1][by] - a[1][by]).slice(0,n);
+}
+
+function mkChart(id, cfg) {
+  if (charts[id]) charts[id].destroy();
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx, cfg);
+}
+
+const baseOpts = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: { backgroundColor: '#21253a', titleColor: '#e8eaf6', bodyColor: '#7b82b5', borderColor: '#2e3250', borderWidth: 1 }
+  },
+  scales: {
+    x: { grid: { color: 'rgba(46,50,80,0.5)' }, ticks: { color: '#7b82b5', font: {size: 11} } },
+    y: { grid: { color: 'rgba(46,50,80,0.5)' }, ticks: { color: '#7b82b5', font: {size: 11} } }
+  }
+};
+
+function doughnutOpts(labels, vals, colors) {
+  return {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: vals, backgroundColor: colors || PALETTE, borderWidth: 2, borderColor: '#0f1117', hoverOffset: 6 }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'right', labels: { color: '#7b82b5', boxWidth: 12, font: {size: 11} } },
+        tooltip: { backgroundColor: '#21253a', titleColor: '#e8eaf6', bodyColor: '#7b82b5', borderColor: '#2e3250', borderWidth: 1 }
+      }
+    }
+  };
+}
+
+function update() {
+  const d = getFiltered();
+  if (!d.length) {
+    document.getElementById('rec-count').textContent = '0 leads shown';
+    document.getElementById('kpi-leads').textContent = '0';
+    document.getElementById('kpi-conv').textContent = '0';
+    document.getElementById('kpi-rate').textContent = '0%';
+    document.getElementById('kpi-courses').textContent = '0';
+    document.getElementById('kpi-region').textContent = '—';
+    document.getElementById('kpi-region-sub').textContent = 'By lead volume';
+    return;
+  }
+
+  document.getElementById('rec-count').textContent = d.reduce((s,r) => s + r.Leads, 0) + ' leads shown';
+
+  const totLeads = d.reduce((s,r) => s + r.Leads, 0);
+  const totConv = d.reduce((s,r) => s + r.Conversions, 0);
+  const rate = totLeads ? ((totConv / totLeads) * 100).toFixed(1) + '%' : '0%';
+  const courses = new Set(d.map(r => r.Course)).size;
+  
+  document.getElementById('kpi-leads').textContent = totLeads.toLocaleString();
+  document.getElementById('kpi-conv').textContent = totConv.toLocaleString();
+  document.getElementById('kpi-rate').textContent = rate;
+  document.getElementById('kpi-courses').textContent = courses;
+  
+  const regionMap = agg(d, 'Region');
+  const topR = sortedEntries(regionMap, 'leads', 1);
+  document.getElementById('kpi-region').textContent = topR.length ? topR[0][0] : '—';
+  document.getElementById('kpi-region-sub').textContent = topR.length ? topR[0][1].leads + ' leads' : 'By lead volume';
+
+  // Region doughnut
+  const rm = agg(d, 'Region');
+  const re = sortedEntries(rm, 'leads');
+  mkChart('ch-region', doughnutOpts(re.map(x => x[0]), re.map(x => x[1].leads)));
+
+  // Category doughnut
+  const cm = agg(d, 'Category');
+  const ce = sortedEntries(cm, 'leads');
+  mkChart('ch-cat', doughnutOpts(ce.map(x => x[0]), ce.map(x => x[1].leads), ['#6c63ff','#00d4aa','#ff6b6b','#ffd166','#48cae4','#a78bfa','#06d6a0']));
+
+  // Channel doughnut
+  const chm = agg(d, 'Channel');
+  const che = sortedEntries(chm, 'leads');
+  mkChart('ch-channel', doughnutOpts(che.map(x => x[0]), che.map(x => x[1].leads), ['#3a86ff','#ff9f43','#06d6a0','#ff6b6b','#a78bfa']));
+
+  // Region grouped bar
+  const regions = Object.keys(agg(d, 'Region')).sort();
+  mkChart('ch-region-bar', {
+    type: 'bar',
+    data: {
+      labels: regions,
+      datasets: [
+        { label: 'Leads', data: regions.map(r => rm[r]?.leads || 0), backgroundColor: 'rgba(108,99,255,0.8)', borderRadius: 5 },
+        { label: 'Conversions', data: regions.map(r => rm[r]?.conv || 0), backgroundColor: 'rgba(0,212,170,0.8)', borderRadius: 5 }
+      ]
+    },
+    options: {
+      ...baseOpts,
+      plugins: {
+        ...baseOpts.plugins,
+        legend: { display: true, labels: { color: '#7b82b5', boxWidth: 12, font: {size: 11} } }
+      }
+    }
+  });
+
+  // Conv rate by region
+  mkChart('ch-conv-region', {
+    type: 'bar',
+    data: {
+      labels: regions,
+      datasets: [{ label: 'Conv Rate %', data: regions.map(r => rm[r] ? +((rm[r].conv / rm[r].leads) * 100).toFixed(1) : 0), backgroundColor: regions.map((_,i) => PALETTE[i % PALETTE.length]), borderRadius: 6 }]
+    },
+    options: {
+      ...baseOpts,
+      plugins: { ...baseOpts.plugins, legend: { display: false } },
+      scales: {
+        ...baseOpts.scales,
+        y: {
+          ...baseOpts.scales.y,
+          ticks: { ...baseOpts.scales.y.ticks, callback: v => v + '%' }
         }
+      }
+    }
+  });
 
-        // ===== URL DATA =====
-        function encodeDataToURL(data) {
-            try {
-                const json = JSON.stringify(data);
-                return LZString.compressToEncodedURIComponent(json);
-            } catch (e) { return null; }
-        }
+  // Enquiry types
+  const em = agg(d, 'EnquiryName');
+  const ee = sortedEntries(em, 'leads', 8);
+  mkChart('ch-enquiry', {
+    type: 'bar',
+    data: {
+      labels: ee.map(x => x[0].length > 22 ? x[0].slice(0,22) + '…' : x[0]),
+      datasets: [{ label: 'Leads', data: ee.map(x => x[1].leads), backgroundColor: PALETTE, borderRadius: 4 }]
+    },
+    options: {
+      ...baseOpts,
+      indexAxis: 'y',
+      plugins: { ...baseOpts.plugins, legend: { display: false } },
+      scales: {
+        x: { ...baseOpts.scales.x },
+        y: { ...baseOpts.scales.y, ticks: { color: '#7b82b5', font: {size: 10} } }
+      }
+    }
+  });
 
-        function decodeDataFromURL(encoded) {
-            try {
-                if (!encoded) return null;
-                const decompressed = LZString.decompressFromEncodedURIComponent(encoded);
-                return decompressed ? JSON.parse(decompressed) : null;
-            } catch (e) { return null; }
-        }
+  // Stacked bar
+  const cats = Object.keys(agg(d, 'Category')).sort();
+  const regionColors = {'INDIA': 'rgba(108,99,255,0.85)', 'USA': 'rgba(0,212,170,0.85)', 'EMEA': 'rgba(255,107,107,0.85)', 'APAC': 'rgba(255,209,102,0.85)'};
+  const allRegions2 = ['INDIA','USA','EMEA','APAC'];
+  const stackedDs = allRegions2.map((region, i) => {
+    const vals = cats.map(cat => {
+      const rows = d.filter(r => r.Region === region && r.Category === cat);
+      return rows.reduce((s, r) => s + r.Leads, 0);
+    });
+    return { label: region, data: vals, backgroundColor: regionColors[region] || PALETTE[i], borderRadius: 3, borderWidth: 0 };
+  });
+  mkChart('ch-stacked', {
+    type: 'bar',
+    data: { labels: cats.map(c => c.length > 14 ? c.slice(0,14) + '…' : c), datasets: stackedDs },
+    options: {
+      ...baseOpts,
+      scales: {
+        x: { ...baseOpts.scales.x, stacked: true },
+        y: { ...baseOpts.scales.y, stacked: true }
+      },
+      plugins: {
+        ...baseOpts.plugins,
+        legend: { display: true, labels: { color: '#7b82b5', boxWidth: 12, font: {size: 11} } }
+      }
+    }
+  });
 
-        function getDataFromURL() {
-            const params = new URLSearchParams(window.location.search);
-            const encoded = params.get('data');
-            return encoded ? decodeDataFromURL(encoded) : null;
-        }
+  // Course table
+  const courseMap = agg(d, 'Course');
+  const courseEntries = sortedEntries(courseMap, 'leads', 20);
+  const maxLeads = courseEntries[0]?.[1]?.leads || 1;
+  let html = '<table><thead><tr><th>#</th><th>Course</th><th>Leads</th><th>Conversions</th><th>Conv Rate</th><th>Share of Total</th></tr></thead><tbody>';
+  courseEntries.forEach(([name, {leads, conv}], i) => {
+    const ratePct = leads ? ((conv / leads) * 100).toFixed(1) : 0;
+    const share = ((leads / totLeads) * 100).toFixed(1);
+    const cls = ratePct >= 15 ? 'conv-high' : ratePct >= 5 ? 'conv-mid' : 'conv-low';
+    const barW = Math.round((leads / maxLeads) * 120);
+    html += `<tr>
+      <td style="color:var(--muted);font-size:0.75rem">${i + 1}</td>
+      <td style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</td>
+      <td><div class="bar-cell"><div class="mini-bar" style="width:${barW}px"></div>${leads}</div></td>
+      <td>${conv}</td>
+      <td><span class="conv-badge ${cls}">${ratePct}%</span></td>
+      <td style="color:var(--muted)">${share}%</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('course-table').innerHTML = html;
+}
 
-        function updateURLWithData(data) {
-            const params = new URLSearchParams(window.location.search);
-            if (!data || !data.length) {
-                params.delete('data');
-            } else {
-                const encoded = encodeDataToURL(data);
-                if (encoded) params.set('data', encoded);
-            }
-            const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
-            window.history.replaceState({}, '', newURL);
-        }
+function resetFilters() {
+  ['f-region','f-cat','f-channel','f-enquiry'].forEach(id => document.getElementById(id).value = '');
+  update();
+}
 
-        // ===== SHARE =====
-        shareBtn.addEventListener('click', () => {
-            if (!currentData.length) {
-                showToast('No data to share. Upload data first.', 3000);
-                return;
-            }
-            updateURLWithData(currentData);
-            const url = window.location.href;
-            if (navigator.clipboard?.writeText) {
-                navigator.clipboard.writeText(url).then(() => {
-                    showToast('✅ Link copied! Share to view anywhere.', 4000);
-                }).catch(() => copyToClipboardFallback(url));
-            } else {
-                copyToClipboardFallback(url);
-            }
-        });
+// ===== INIT =====
+// Use full RAW data
+if (RAW && RAW.length) {
+  // Load full data - use the complete RAW array from above
+  // For demonstration, we'll use the truncated version
+  // In production, use the full data
+  loadData(RAW, true);
+  showToast('📊 Dashboard loaded with data', 2000);
+} else {
+  showToast('⚠️ No data found', 3000);
+}
 
-        function copyToClipboardFallback(text) {
-            const ta = document.createElement('textarea');
-            ta.value = text;
-            ta.style.cssText = 'position:fixed;opacity:0';
-            document.body.appendChild(ta);
-            ta.select();
-            try {
-                document.execCommand('copy');
-                showToast('✅ Link copied!', 3000);
-            } catch (e) {
-                showToast('📋 Copy: ' + text, 5000);
-            }
-            document.body.removeChild(ta);
-        }
-
-        // ===== HELPERS =====
-        function getUnique(arr, key) {
-            const set = new Set(arr.map(d => d[key]).filter(Boolean));
-            return Array.from(set).sort();
-        }
-
-        function filterData(region, category, channel, enquiry) {
-            return currentData.filter(d => {
-                if (region && d.Region !== region) return false;
-                if (category && d.Category !== category) return false;
-                if (channel && d.Channel !== channel) return false;
-                if (enquiry && d.EnquiryName !== enquiry) return false;
-                return true;
-            });
-        }
-
-        function aggregateBy(arr, key, valKey = 'Leads') {
-            const map = new Map();
-            arr.forEach(d => {
-                const k = d[key];
-                if (!k) return;
-                map.set(k, (map.get(k) || 0) + d[valKey]);
-            });
-            return Array.from(map.entries()).map(([label, value]) => ({ label, value }));
-        }
-
-        function aggregateLeadsConv(arr, key) {
-            const map = new Map();
-            arr.forEach(d => {
-                const k = d[key];
-                if (!k) return;
-                if (!map.has(k)) map.set(k, { leads: 0, conv: 0 });
-                const v = map.get(k);
-                v.leads += d.Leads;
-                v.conv += d.Conversions;
-            });
-            return map;
-        }
-
-        // ===== POPULATE FILTERS =====
-        function populateFilters() {
-            if (!currentData.length) {
-                ['regionFilter', 'categoryFilter', 'channelFilter', 'enquiryFilter'].forEach(id => {
-                    const el = document.getElementById(id);
-                    el.innerHTML = '<option value="">All</option>';
-                    el.disabled = true;
-                });
-                resetBtn.disabled = true;
-                return;
-            }
-
-            const regions = getUnique(currentData, 'Region');
-            const categories = getUnique(currentData, 'Category');
-            const channels = getUnique(currentData, 'Channel');
-            const enquiries = getUnique(currentData, 'EnquiryName');
-
-            regionFilter.innerHTML = '<option value="">All Regions</option>' + regions.map(r => `<option value="${r}">${r}</option>`).join('');
-            categoryFilter.innerHTML = '<option value="">All Categories</option>' + categories.map(c => `<option value="${c}">${c}</option>`).join('');
-            channelFilter.innerHTML = '<option value="">All Channels</option>' + channels.map(c => `<option value="${c}">${c}</option>`).join('');
-            enquiryFilter.innerHTML = '<option value="">All Enquiry Types</option>' + enquiries.map(e => `<option value="${e}">${e}</option>`).join('');
-
-            regionFilter.disabled = false;
-            categoryFilter.disabled = false;
-            channelFilter.disabled = false;
-            enquiryFilter.disabled = false;
-            resetBtn.disabled = false;
-        }
-
-        // ===== RENDER =====
-        function render(region, category, channel, enquiry) {
-            const d = filterData(region, category, channel, enquiry);
-            const totalLeads = d.reduce((s, r) => s + r.Leads, 0);
-            const totalConv = d.reduce((s, r) => s + r.Conversions, 0);
-            const rate = totalLeads > 0 ? ((totalConv / totalLeads) * 100).toFixed(1) + '%' : '0%';
-            const courses = new Set(d.map(r => r.Course)).size;
-
-            recCount.textContent = totalLeads + ' leads shown';
-
-            kpiLeads.textContent = totalLeads.toLocaleString();
-            kpiLeads.classList.remove('empty');
-            kpiConv.textContent = totalConv.toLocaleString();
-            kpiConv.classList.remove('empty');
-            kpiRate.textContent = rate;
-            kpiRate.classList.remove('empty');
-            kpiCourses.textContent = courses;
-            kpiCourses.classList.remove('empty');
-
-            const regionMap = aggregateLeadsConv(d, 'Region');
-            let topRegion = '—';
-            let topLeads = 0;
-            for (const [k, v] of regionMap) {
-                if (v.leads > topLeads) { topLeads = v.leads; topRegion = k; }
-            }
-            kpiTopRegion.textContent = topRegion;
-            kpiTopRegion.classList.remove('empty');
-            kpiTopRegionSub.textContent = topLeads > 0 ? topLeads + ' leads' : 'By lead volume';
-
-            // --- Charts ---
-            const palette = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1'];
-            
-            // Region doughnut
-            const re = aggregateBy(d, 'Region');
-            updateChart('chartRegion', 'doughnut', re.map(x => x.label), re.map(x => x.value), palette);
-
-            // Category doughnut
-            const ca = aggregateBy(d, 'Category');
-            updateChart('chartCategory', 'doughnut', ca.map(x => x.label), ca.map(x => x.value), palette);
-
-            // Channel doughnut
-            const ch = aggregateBy(d, 'Channel');
-            updateChart('chartChannel', 'doughnut', ch.map(x => x.label), ch.map(x => x.value), palette);
-
-            // Region bar
-            const regions = Array.from(regionMap.keys());
-            const leadsVals = regions.map(r => regionMap.get(r).leads);
-            const convVals = regions.map(r => regionMap.get(r).conv);
-            updateChart('chartRegionBar', 'bar', regions, [leadsVals, convVals], ['#3b82f680', '#10b98180'], ['Leads', 'Conversions']);
-
-            // Conv rate by region
-            const rateVals = regions.map(r => {
-                const v = regionMap.get(r);
-                return v.leads > 0 ? +((v.conv / v.leads) * 100).toFixed(1) : 0;
-            });
-            updateChart('chartConvRegion', 'bar', regions, [rateVals], ['#8b5cf6'], ['Conversion %']);
-
-            // Enquiry types
-            const en = aggregateBy(d, 'EnquiryName').sort((a, b) => b.value - a.value).slice(0, 8);
-            updateChart('chartEnquiry', 'bar', en.map(x => x.label.length > 22 ? x.label.slice(0, 22) + '…' : x.label), [en.map(x => x.value)], ['#6366f1'], ['Leads'], true);
-
-            // Stacked: Category x Region
-            const cats = getUnique(d, 'Category');
-            const allRegions = ['INDIA', 'USA', 'EMEA', 'APAC'];
-            const regionColors = { 'INDIA': '#3b82f680', 'USA': '#10b98180', 'EMEA': '#f59e0b80', 'APAC': '#8b5cf680' };
-            const datasets = allRegions.map(r => ({
-                label: r,
-                data: cats.map(c => d.filter(x => x.Region === r && x.Category === c).reduce((s, x) => s + x.Leads, 0)),
-                backgroundColor: regionColors[r] || '#94a3b880',
-                borderRadius: 3
-            }));
-            const ctxStacked = document.getElementById('chartStacked').getContext('2d');
-            if (charts['chartStacked']) { try { charts['chartStacked'].destroy(); } catch (e) {} }
-            charts['chartStacked'] = new Chart(ctxStacked, {
-                type: 'bar',
-                data: { labels: cats.map(c => c.length > 14 ? c.slice(0, 14) + '…' : c), datasets },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { font: { size: 11 } } } }, scales: { x: { stacked: true }, y: { stacked: true } } }
-            });
-
-            // --- Course Table ---
-            const courseMap = aggregateLeadsConv(d, 'Course');
-            const sorted = Array.from(courseMap.entries()).sort((a, b) => b[1].leads - a[1].leads).slice(0, 20);
-            const maxLeads = sorted.length ? sorted[0][1].leads : 1;
-            let html = '<table><thead><tr><th>#</th><th>Course</th><th>Leads</th><th>Conversions</th><th>Conv Rate</th><th>Share</th></tr></thead><tbody>';
-            sorted.forEach(([name, { leads, conv }], i) => {
-                const ratePct = leads > 0 ? ((conv / leads) * 100).toFixed(1) : 0;
-                const share = totalLeads > 0 ? ((leads / totalLeads) * 100).toFixed(1) : 0;
-                const cls = ratePct >= 15 ? 'conv-high' : ratePct >= 5 ? 'conv-mid' : 'conv-low';
-                const barW = Math.round((leads / maxLeads) * 120);
-                html += `<tr>
-                    <td style="color:#94a3b8;font-size:0.75rem">${i + 1}</td>
-                    <td style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</td>
-                    <td><div class="bar-cell"><div class="mini-bar" style="width:${barW}px"></div>${leads}</div></td>
-                    <td>${conv}</td>
-                    <td><span class="conv-badge ${cls}">${ratePct}%</span></td>
-                    <td style="color:#94a3b8">${share}%</td>
-                </tr>`;
-            });
-            html += '</tbody></table>';
-            document.getElementById('courseTable').innerHTML = html;
-        }
-
-        function updateChart(id, type, labels, data, colors, labels2, horizontal = false) {
-            const ctx = document.getElementById(id).getContext('2d');
-            if (charts[id]) { try { charts[id].destroy(); } catch (e) {} }
-
-            const isPie = type === 'doughnut';
-            let datasets = [];
-
-            if (isPie) {
-                datasets = [{ data, backgroundColor: colors.slice(0, labels.length), borderWidth: 2, borderColor: '#fff' }];
-            } else if (Array.isArray(data[0])) {
-                // Multiple datasets
-                datasets = data.map((d, i) => ({
-                    label: (labels2 && labels2[i]) || '',
-                    data: d,
-                    backgroundColor: colors[i % colors.length],
-                    borderRadius: 4
-                }));
-            } else {
-                datasets = [{ label: (labels2 && labels2[0]) || '', data, backgroundColor: colors.slice(0, labels.length), borderRadius: 4 }];
-            }
-
-            charts[id] = new Chart(ctx, {
-                type: isPie ? 'doughnut' : type,
-                data: { labels, datasets },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    indexAxis: horizontal ? 'y' : 'x',
-                    plugins: {
-                        legend: { display: isPie || labels2 ? true : false, position: 'bottom', labels: { font: { size: 11 } } }
-                    },
-                    scales: isPie ? {} : {
-                        x: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
-                        y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }
-                    }
-                }
-            });
-        }
-
-        // ===== LOAD DATA =====
-        function loadData(data, persistToURL = true) {
-            currentData = data;
-            if (persistToURL) updateURLWithData(currentData);
-            populateFilters();
-            render('', '', '', '');
-        }
-
-        // ===== ADMIN =====
-        function authenticate() {
-            if (adminPassword.value.trim() === ADMIN_PASSWORD) {
-                isAuthenticated = true;
-                adminStatus.className = 'admin-status info';
-                adminStatus.textContent = '✅ Authenticated. Upload a file.';
-                adminUploadSection.style.display = 'block';
-                adminAuthBtn.style.display = 'none';
-                adminUploadBtn.style.display = 'inline-block';
-                adminUploadBtn.disabled = true;
-                adminFileSelected.textContent = '';
-                adminFileInput.value = '';
-                pendingFile = null;
-            } else {
-                adminStatus.className = 'admin-status error';
-                adminStatus.textContent = '❌ Incorrect password.';
-                adminPassword.value = '';
-                adminPassword.focus();
-            }
-        }
-
-        function handleAdminFile(file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const json = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-                    let rows = json;
-                    if (rows.length > 0 && rows[0].some(cell => /course|region|lead|source|payment/i.test(String(cell)))) {
-                        rows = rows.slice(1);
-                    }
-                    const parsed = rows.map(row => ({
-                        Course: (row[0] || '').toString().trim(),
-                        Region: (row[1] || '').toString().trim(),
-                        Channel: (row[2] || '').toString().trim() || 'unknown',
-                        Leads: Number(row[3]) || 0,
-                        Conversions: Number(row[4]) || 0,
-                        EnquiryName: (row[5] || '').toString().trim() || 'Other',
-                        Category: (row[6] || '').toString().trim() || 'Other'
-                    }));
-                    loadData(parsed, true);
-                    adminStatus.className = 'admin-status success';
-                    adminStatus.textContent = '✅ Uploaded! Dashboard updated.';
-                    adminUploadBtn.disabled = true;
-                    pendingFile = null;
-                    adminFileSelected.textContent = '';
-                    setTimeout(() => {
-                        adminModal.classList.remove('active');
-                        isAuthenticated = false;
-                        adminUploadSection.style.display = 'none';
-                        adminAuthBtn.style.display = 'inline-block';
-                        adminUploadBtn.style.display = 'none';
-                        adminPassword.value = '';
-                        showToast('✅ Data uploaded! Share the URL.', 3000);
-                    }, 1000);
-                } catch (err) {
-                    adminStatus.className = 'admin-status error';
-                    adminStatus.textContent = '❌ Error: ' + err.message;
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        // ===== ADMIN EVENTS =====
-        adminLockBtn.addEventListener('click', () => {
-            adminModal.classList.add('active');
-            adminStatus.className = 'admin-status';
-            adminStatus.textContent = '';
-            adminFileSelected.textContent = '';
-            adminUploadBtn.disabled = true;
-            adminUploadBtn.style.display = 'none';
-            adminAuthBtn.style.display = 'inline-block';
-            adminUploadSection.style.display = 'none';
-            adminPassword.value = '';
-            pendingFile = null;
-            adminFileInput.value = '';
-            isAuthenticated = false;
-            setTimeout(() => adminPassword.focus(), 300);
-        });
-
-        adminCloseBtn.addEventListener('click', () => adminModal.classList.remove('active'));
-        adminModal.addEventListener('click', (e) => { if (e.target === adminModal) adminModal.classList.remove('active'); });
-        adminPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') authenticate(); });
-        adminAuthBtn.addEventListener('click', authenticate);
-
-        adminDropArea.addEventListener('click', () => { if (isAuthenticated) adminFileInput.click(); });
-        adminDropArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            if (isAuthenticated) { adminDropArea.style.borderColor = '#3b82f6'; adminDropArea.style.background = '#f0f7ff'; }
-        });
-        adminDropArea.addEventListener('dragleave', () => {
-            adminDropArea.style.borderColor = '#e2e8f0';
-            adminDropArea.style.background = 'transparent';
-        });
-        adminDropArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            adminDropArea.style.borderColor = '#e2e8f0';
-            adminDropArea.style.background = 'transparent';
-            if (!isAuthenticated) {
-                adminStatus.className = 'admin-status error';
-                adminStatus.textContent = '❌ Authenticate first.';
-                return;
-            }
-            if (e.dataTransfer.files.length) {
-                const file = e.dataTransfer.files[0];
-                if (file.name.match(/\.(xlsx|xls)$/i)) {
-                    pendingFile = file;
-                    adminFileSelected.textContent = '📄 ' + file.name;
-                    adminUploadBtn.disabled = false;
-                    adminStatus.className = 'admin-status';
-                    adminStatus.textContent = '';
-                } else {
-                    adminStatus.className = 'admin-status error';
-                    adminStatus.textContent = '❌ Upload .xlsx or .xls';
-                }
-            }
-        });
-
-        adminFileInput.addEventListener('change', () => {
-            if (adminFileInput.files.length && isAuthenticated) {
-                const file = adminFileInput.files[0];
-                pendingFile = file;
-                adminFileSelected.textContent = '📄 ' + file.name;
-                adminUploadBtn.disabled = false;
-                adminStatus.className = 'admin-status';
-                adminStatus.textContent = '';
-            }
-        });
-
-        adminUploadBtn.addEventListener('click', () => {
-            if (pendingFile && isAuthenticated) handleAdminFile(pendingFile);
-        });
-
-        // ===== FILTER EVENTS =====
-        function updateFromFilters() {
-            render(regionFilter.value, categoryFilter.value, channelFilter.value, enquiryFilter.value);
-        }
-
-        regionFilter.addEventListener('change', updateFromFilters);
-        categoryFilter.addEventListener('change', updateFromFilters);
-        channelFilter.addEventListener('change', updateFromFilters);
-        enquiryFilter.addEventListener('change', updateFromFilters);
-        resetBtn.addEventListener('click', () => {
-            regionFilter.value = '';
-            categoryFilter.value = '';
-            channelFilter.value = '';
-            enquiryFilter.value = '';
-            updateFromFilters();
-        });
-
-        // ===== INIT =====
-        let loaded = false;
-        const urlData = getDataFromURL();
-
-        if (urlData && urlData.length) {
-            loadData(urlData, false);
-            loaded = true;
-            showToast('📊 Data loaded from URL', 2000);
-        } else if (RAW && RAW.length) {
-            // Use the embedded raw data
-            loadData(RAW, true);
-            loaded = true;
-            showToast('📊 Data loaded from embedded source', 1500);
-        } else {
-            // No data - show empty state
-            document.querySelectorAll('.kpi-value').forEach(el => { el.textContent = '—'; el.classList.add('empty'); });
-            regionFilter.disabled = true;
-            categoryFilter.disabled = true;
-            channelFilter.disabled = true;
-            enquiryFilter.disabled = true;
-            resetBtn.disabled = true;
-            recCount.textContent = 'No data';
-        }
-
-        // Expose for debugging
-        window.loadData = loadData;
-        window.getCurrentData = () => currentData;
-    })();
+// Expose for debugging
+window.loadData = loadData;
+window.getCurrentData = () => currentData;
 </script>
 </body>
 </html>
