@@ -1,4 +1,4 @@
-
+html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -51,53 +51,39 @@
         }
         .header h1 i { color: #3b82f6; }
 
-        .upload-group {
+        /* Admin portal trigger */
+        .admin-trigger {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             background: white;
-            padding: 6px 16px 6px 20px;
+            padding: 6px 18px 6px 20px;
             border-radius: 60px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            border: 1px solid #eef2f6;
+            cursor: pointer;
+            transition: 0.2s;
         }
-        .upload-group label {
+        .admin-trigger:hover { border-color: #3b82f6; background: #f8fafc; }
+        .admin-trigger span {
             font-weight: 500;
             font-size: 13px;
             color: #475569;
             display: flex;
             align-items: center;
-            gap: 6px;
-            cursor: pointer;
-        }
-        .upload-group label i { color: #3b82f6; }
-        .upload-group input[type="file"] {
-            display: none;
-        }
-        .upload-group .file-name {
-            font-size: 13px;
-            color: #3b82f6;
-            font-weight: 500;
-            max-width: 140px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .btn-download {
-            background: #1e293b;
-            border: none;
-            color: white;
-            border-radius: 40px;
-            padding: 8px 20px;
-            font-weight: 500;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
             gap: 8px;
-            cursor: pointer;
-            transition: 0.2s;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
         }
-        .btn-download:hover { background: #0f172a; }
+        .admin-trigger span i { color: #3b82f6; font-size: 14px; }
+        .admin-badge {
+            background: #eef2ff;
+            color: #4f46e5;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 40px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
 
         .filter-group {
             display: flex;
@@ -157,40 +143,106 @@
             cursor: not-allowed;
         }
 
-        /* New download buttons group */
-        .download-group {
-            display: flex;
+        /* Admin Portal Modal */
+        .admin-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(6px);
+            z-index: 1000;
             align-items: center;
-            gap: 10px;
-            background: white;
-            padding: 6px 16px 6px 20px;
-            border-radius: 60px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            justify-content: center;
         }
-        .download-group .btn-download {
-            background: #1e293b;
-            border: none;
-            color: white;
-            border-radius: 40px;
-            padding: 8px 18px;
-            font-weight: 500;
-            font-size: 13px;
+        .admin-modal.active { display: flex; }
+        .admin-modal-content {
+            background: white;
+            max-width: 500px;
+            width: 90%;
+            padding: 32px 30px;
+            border-radius: 32px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.15);
+            position: relative;
+        }
+        .admin-modal-content h2 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
+        }
+        .admin-modal-content h2 i { color: #3b82f6; }
+        .admin-modal-content .sub {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .admin-upload-area {
+            border: 2px dashed #e2e8f0;
+            border-radius: 20px;
+            padding: 40px 20px;
+            text-align: center;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+        .admin-upload-area:hover { border-color: #3b82f6; background: #f8fafc; }
+        .admin-upload-area i { font-size: 40px; color: #94a3b8; margin-bottom: 12px; }
+        .admin-upload-area p { font-weight: 500; color: #1e293b; }
+        .admin-upload-area .hint { font-size: 13px; color: #94a3b8; margin-top: 6px; }
+        .admin-upload-area input[type="file"] { display: none; }
+        .admin-upload-area .file-selected {
+            margin-top: 12px;
+            color: #3b82f6;
+            font-weight: 500;
+        }
+        .admin-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            justify-content: flex-end;
+        }
+        .admin-actions button {
+            padding: 10px 28px;
+            border-radius: 60px;
+            font-weight: 500;
+            font-size: 14px;
+            border: none;
             cursor: pointer;
             transition: 0.2s;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
         }
-        .download-group .btn-download:hover { background: #0f172a; }
-        .download-group .btn-download.outline {
-            background: transparent;
-            color: #1e293b;
-            border: 1px solid #e2e8f0;
-        }
-        .download-group .btn-download.outline:hover {
+        .admin-actions .btn-close {
             background: #f1f5f9;
-            border-color: #cbd5e1;
+            color: #475569;
+        }
+        .admin-actions .btn-close:hover { background: #e2e8f0; }
+        .admin-actions .btn-upload {
+            background: #1e293b;
+            color: white;
+        }
+        .admin-actions .btn-upload:hover { background: #0f172a; }
+        .admin-actions .btn-upload:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .admin-status {
+            margin-top: 16px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            display: none;
+        }
+        .admin-status.success {
+            display: block;
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .admin-status.error {
+            display: block;
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
         }
 
         .kpi-grid {
@@ -254,19 +306,6 @@
         .chart-wrapper { position: relative; height: 200px; }
         .chart-wrapper.tall { height: 220px; }
 
-        .empty-state {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 80px 20px;
-            color: #94a3b8;
-            background: white;
-            border-radius: 40px;
-            border: 2px dashed #e2e8f0;
-        }
-        .empty-state i { font-size: 56px; margin-bottom: 20px; opacity: 0.3; color: #3b82f6; }
-        .empty-state h3 { font-weight: 500; font-size: 18px; color: #475569; margin-bottom: 8px; }
-        .empty-state p { font-size: 14px; color: #94a3b8; }
-
         .chart-placeholder {
             display: flex;
             align-items: center;
@@ -277,44 +316,45 @@
             font-weight: 500;
         }
 
+        .footer-note {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 13px;
+            color: #94a3b8;
+            border-top: 1px solid #eef2f6;
+            padding-top: 24px;
+        }
+        .footer-note i { color: #3b82f6; }
+
         @media (max-width: 700px) {
             .header { flex-direction: column; align-items: stretch; gap: 16px; }
             .filter-group { border-radius: 40px; padding: 12px 16px; flex-wrap: wrap; }
             .chart-grid { grid-template-columns: 1fr; }
             .header-left { flex-direction: column; align-items: stretch; }
-            .upload-group { border-radius: 40px; justify-content: space-between; }
-            .download-group { justify-content: center; }
+            .admin-trigger { justify-content: center; }
+            .admin-modal-content { padding: 24px 20px; }
         }
     </style>
 </head>
 <body>
 <div class="dashboard">
-    <!-- header with upload & download -->
+    <!-- header -->
     <div class="header">
         <div class="header-left">
             <h1><i class="fas fa-chart-simple"></i> Weekly Pulse</h1>
-            <div class="upload-group">
-                <label for="fileUpload"><i class="fas fa-cloud-upload-alt"></i> Upload .xlsx</label>
-                <input type="file" id="fileUpload" accept=".xlsx,.xls">
-                <span class="file-name" id="fileName">No file</span>
-                <button class="btn-download" id="downloadBtn"><i class="fas fa-download"></i> Download</button>
+            <!-- Admin Portal Trigger -->
+            <div class="admin-trigger" id="adminTrigger">
+                <span><i class="fas fa-user-shield"></i> Admin <span class="admin-badge">portal</span></span>
             </div>
         </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
-            <!-- NEW: Download HTML & Export PDF buttons -->
-            <div class="download-group">
-                <button class="btn-download outline" id="downloadHtmlBtn"><i class="fas fa-code"></i> Download HTML</button>
-                <button class="btn-download" id="exportPdfBtn"><i class="fas fa-file-pdf"></i> Export PDF</button>
-            </div>
-            <div class="filter-group" id="filterGroup">
-                <label><i class="fas fa-globe"></i> Region
-                    <select id="regionFilter" disabled><option value="All">All</option></select>
-                </label>
-                <label><i class="fas fa-tag"></i> Lead Source
-                    <select id="sourceFilter" disabled><option value="All">All</option></select>
-                </label>
-                <button class="reset-btn" id="resetFilters" disabled><i class="fas fa-rotate-left"></i> Reset</button>
-            </div>
+        <div class="filter-group" id="filterGroup">
+            <label><i class="fas fa-globe"></i> Region
+                <select id="regionFilter" disabled><option value="All">All</option></select>
+            </label>
+            <label><i class="fas fa-tag"></i> Lead Source
+                <select id="sourceFilter" disabled><option value="All">All</option></select>
+            </label>
+            <button class="reset-btn" id="resetFilters" disabled><i class="fas fa-rotate-left"></i> Reset</button>
         </div>
     </div>
 
@@ -337,6 +377,30 @@
         <div class="chart-card"><div class="chart-title"><i class="fas fa-list-check"></i> Top 6 Courses by Payment</div><div class="chart-wrapper tall"><canvas id="chartTopPayment"></canvas></div></div>
         <div class="chart-card"><div class="chart-title"><i class="fas fa-percent"></i> Conversion by Region</div><div class="chart-wrapper"><canvas id="chartConversion"></canvas></div></div>
     </div>
+
+    <div class="footer-note">
+        <i class="fas fa-database"></i> Data is saved locally — share the URL to view this dashboard
+    </div>
+</div>
+
+<!-- Admin Portal Modal -->
+<div class="admin-modal" id="adminModal">
+    <div class="admin-modal-content">
+        <h2><i class="fas fa-upload"></i> Admin Portal</h2>
+        <p class="sub">Upload a new Excel file (.xlsx) to refresh the dashboard data.</p>
+        <div class="admin-upload-area" id="adminDropArea">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Click or drag & drop your .xlsx file</p>
+            <div class="hint">Supports .xlsx, .xls</div>
+            <input type="file" id="adminFileInput" accept=".xlsx,.xls">
+            <div class="file-selected" id="adminFileSelected"></div>
+        </div>
+        <div class="admin-status" id="adminStatus"></div>
+        <div class="admin-actions">
+            <button class="btn-close" id="adminCloseBtn">Cancel</button>
+            <button class="btn-upload" id="adminUploadBtn" disabled>Upload & Refresh</button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -344,21 +408,27 @@
         // ----- state -----
         let currentData = [];
         let charts = {};
+        let pendingFile = null;
 
         // DOM refs
         const regionSelect = document.getElementById('regionFilter');
         const sourceSelect = document.getElementById('sourceFilter');
         const resetBtn = document.getElementById('resetFilters');
-        const fileInput = document.getElementById('fileUpload');
-        const fileNameSpan = document.getElementById('fileName');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const downloadHtmlBtn = document.getElementById('downloadHtmlBtn');
-        const exportPdfBtn = document.getElementById('exportPdfBtn');
 
         const kpiLeads = document.getElementById('kpiLeads');
         const kpiPayments = document.getElementById('kpiPayments');
         const kpiConv = document.getElementById('kpiConv');
         const kpiCourses = document.getElementById('kpiCourses');
+
+        // Admin modal refs
+        const adminModal = document.getElementById('adminModal');
+        const adminTrigger = document.getElementById('adminTrigger');
+        const adminCloseBtn = document.getElementById('adminCloseBtn');
+        const adminFileInput = document.getElementById('adminFileInput');
+        const adminDropArea = document.getElementById('adminDropArea');
+        const adminFileSelected = document.getElementById('adminFileSelected');
+        const adminUploadBtn = document.getElementById('adminUploadBtn');
+        const adminStatus = document.getElementById('adminStatus');
 
         // ----- helpers -----
         function getUnique(arr, key) {
@@ -384,28 +454,38 @@
             return Array.from(map.entries()).map(([label, value]) => ({ label, value }));
         }
 
+        // ----- localStorage persistence -----
+        function saveToStorage(data) {
+            try {
+                localStorage.setItem('dashboardData', JSON.stringify(data));
+            } catch (e) { /* ignore */ }
+        }
+
+        function loadFromStorage() {
+            try {
+                const stored = localStorage.getItem('dashboardData');
+                if (stored) return JSON.parse(stored);
+            } catch (e) { /* ignore */ }
+            return null;
+        }
+
         // ----- render -----
         function render(region, source) {
             if (!currentData.length) {
-                // show empty state
                 document.querySelectorAll('.kpi-value').forEach(el => {
                     el.textContent = '—';
                     el.classList.add('empty');
                 });
-                // destroy all charts
                 Object.keys(charts).forEach(key => { 
                     if (charts[key]) { 
                         try { charts[key].destroy(); } catch(e) {}
                         delete charts[key]; 
                     } 
                 });
-                // show placeholder in chart wrappers
                 document.querySelectorAll('.chart-wrapper canvas').forEach(canvas => {
                     const wrapper = canvas.parentElement;
-                    // remove any existing placeholder
                     const existing = wrapper.querySelector('.chart-placeholder');
                     if (existing) existing.remove();
-                    // only add if no chart and no placeholder
                     if (!wrapper.querySelector('.chart-placeholder')) {
                         const placeholder = document.createElement('div');
                         placeholder.className = 'chart-placeholder';
@@ -413,19 +493,16 @@
                         wrapper.appendChild(placeholder);
                     }
                 });
-                // disable filters
                 regionSelect.disabled = true;
                 sourceSelect.disabled = true;
                 resetBtn.disabled = true;
                 return;
             }
 
-            // enable filters
             regionSelect.disabled = false;
             sourceSelect.disabled = false;
             resetBtn.disabled = false;
 
-            // remove placeholders
             document.querySelectorAll('.chart-placeholder').forEach(el => el.remove());
 
             const filtered = filterData(region, source);
@@ -443,11 +520,10 @@
             kpiCourses.textContent = uniqueCourses;
             kpiCourses.classList.remove('empty');
 
-            // --- 1 region leads ---
+            // --- charts ---
             const regionAgg = aggregateBy(filtered, 'region');
             updateChart('chartRegion', 'bar', regionAgg.map(d => d.label), regionAgg.map(d => d.value), '#3b82f6', 'Leads');
 
-            // --- 2 source pie ---
             const sourceAgg = aggregateBy(filtered, 'source');
             const sortedSource = sourceAgg.sort((a,b) => b.value - a.value);
             let sourceLabels = sortedSource.slice(0,6).map(d => d.label);
@@ -459,12 +535,10 @@
             }
             updateChart('chartSource', 'pie', sourceLabels, sourceValues, ['#3b82f6','#f59e0b','#10b981','#8b5cf6','#ec4899','#14b8a6','#94a3b8']);
 
-            // --- 3 top 8 courses by leads ---
             const courseAgg = aggregateBy(filtered, 'course');
             const topCourses = courseAgg.sort((a,b) => b.value - a.value).slice(0,8);
             updateChart('chartTopCourses', 'bar', topCourses.map(d => d.label), topCourses.map(d => d.value), '#8b5cf6', 'Leads', true);
 
-            // --- 4 region payments vs leads ---
             const regionPay = aggregateBy(filtered, 'region');
             const regionPayMap = new Map();
             filtered.forEach(d => {
@@ -487,11 +561,9 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
             });
 
-            // --- 5 source performance ---
             const sourcePerf = aggregateBy(filtered, 'source').sort((a,b) => b.value - a.value).slice(0,8);
             updateChart('chartSourcePerformance', 'bar', sourcePerf.map(d => d.label), sourcePerf.map(d => d.value), '#f59e0b', 'Leads', true);
 
-            // --- 6 heat: region x source (top 5 sources) ---
             const topSources = aggregateBy(filtered, 'source').sort((a,b) => b.value - a.value).slice(0,5).map(d => d.label);
             const heatRegions = getUnique(filtered, 'region');
             const heatData = heatRegions.map(reg => {
@@ -514,12 +586,10 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { x: { stacked: true }, y: { stacked: true } } }
             });
 
-            // --- 7 top 6 courses by payment ---
             const payAgg = aggregateBy(filtered, 'course', 'payments');
             const topPay = payAgg.sort((a,b) => b.value - a.value).slice(0,6);
             updateChart('chartTopPayment', 'bar', topPay.map(d => d.label), topPay.map(d => d.value), '#10b981', 'Payments', true);
 
-            // --- 8 conversion by region ---
             const convReg = getUnique(filtered, 'region');
             const convData = convReg.map(reg => {
                 const leadsR = filtered.filter(d => d.region === reg).reduce((s,d) => s + d.leads, 0);
@@ -572,7 +642,7 @@
         }
 
         // ----- load data from parsed rows -----
-        function loadData(rows) {
+        function loadData(rows, persist = true) {
             currentData = rows.map(row => {
                 let region = (row[1] || '').toString().trim();
                 if (region.toUpperCase() === 'INDIA') region = 'India';
@@ -584,12 +654,13 @@
                     payments: row[4] ? Number(row[4]) : 0
                 };
             });
+            if (persist) saveToStorage(currentData);
             populateFilters();
             render('All', 'All');
         }
 
-        // ----- handle file upload -----
-        function handleFile(file) {
+        // ----- handle file upload (admin) -----
+        function handleAdminFile(file) {
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
@@ -597,59 +668,90 @@
                     const workbook = XLSX.read(data, { type: 'array' });
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const json = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-                    // skip header if first row looks like header
                     let rows = json;
                     if (rows.length > 0 && rows[0].some(cell => /course|region|lead|source|payment/i.test(String(cell)))) {
                         rows = rows.slice(1);
                     }
-                    loadData(rows);
-                    fileNameSpan.textContent = file.name;
+                    loadData(rows, true);
+                    adminStatus.className = 'admin-status success';
+                    adminStatus.textContent = '✅ Data uploaded successfully! Dashboard updated.';
+                    adminUploadBtn.disabled = true;
+                    pendingFile = null;
+                    adminFileSelected.textContent = '';
+                    setTimeout(() => { adminModal.classList.remove('active'); }, 1200);
                 } catch (err) {
-                    alert('Error reading file: ' + err.message);
+                    adminStatus.className = 'admin-status error';
+                    adminStatus.textContent = '❌ Error reading file: ' + err.message;
                 }
             };
             reader.readAsArrayBuffer(file);
         }
 
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length) {
-                handleFile(e.target.files[0]);
+        // ----- Admin modal logic -----
+        adminTrigger.addEventListener('click', () => {
+            adminModal.classList.add('active');
+            adminStatus.className = 'admin-status';
+            adminStatus.textContent = '';
+            adminFileSelected.textContent = '';
+            adminUploadBtn.disabled = true;
+            pendingFile = null;
+            adminFileInput.value = '';
+        });
+
+        adminCloseBtn.addEventListener('click', () => {
+            adminModal.classList.remove('active');
+        });
+
+        adminModal.addEventListener('click', (e) => {
+            if (e.target === adminModal) adminModal.classList.remove('active');
+        });
+
+        // File selection via click or drag
+        adminDropArea.addEventListener('click', () => adminFileInput.click());
+
+        adminDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            adminDropArea.style.borderColor = '#3b82f6';
+            adminDropArea.style.background = '#f0f7ff';
+        });
+        adminDropArea.addEventListener('dragleave', () => {
+            adminDropArea.style.borderColor = '#e2e8f0';
+            adminDropArea.style.background = 'transparent';
+        });
+        adminDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            adminDropArea.style.borderColor = '#e2e8f0';
+            adminDropArea.style.background = 'transparent';
+            if (e.dataTransfer.files.length) {
+                const file = e.dataTransfer.files[0];
+                if (file.name.match(/\.(xlsx|xls)$/i)) {
+                    pendingFile = file;
+                    adminFileSelected.textContent = '📄 ' + file.name;
+                    adminUploadBtn.disabled = false;
+                    adminStatus.className = 'admin-status';
+                    adminStatus.textContent = '';
+                } else {
+                    adminStatus.className = 'admin-status error';
+                    adminStatus.textContent = '❌ Please upload an Excel file (.xlsx or .xls)';
+                }
             }
         });
 
-        // ----- download current dashboard (HTML) -----
-        downloadBtn.addEventListener('click', () => {
-            const doctype = '<!DOCTYPE html>\n';
-            const html = document.documentElement.outerHTML;
-            const blob = new Blob([doctype + html], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'dashboard.html';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+        adminFileInput.addEventListener('change', () => {
+            if (adminFileInput.files.length) {
+                const file = adminFileInput.files[0];
+                pendingFile = file;
+                adminFileSelected.textContent = '📄 ' + file.name;
+                adminUploadBtn.disabled = false;
+                adminStatus.className = 'admin-status';
+                adminStatus.textContent = '';
+            }
         });
 
-        // ----- NEW: Download HTML (same as above but separate button) -----
-        downloadHtmlBtn.addEventListener('click', () => {
-            const doctype = '<!DOCTYPE html>\n';
-            const html = document.documentElement.outerHTML;
-            const blob = new Blob([doctype + html], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'dashboard.html';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        });
-
-        // ----- NEW: Export PDF (uses window.print) -----
-        exportPdfBtn.addEventListener('click', () => {
-            window.print();
+        adminUploadBtn.addEventListener('click', () => {
+            if (pendingFile) {
+                handleAdminFile(pendingFile);
+            }
         });
 
         // ----- filter events -----
@@ -666,25 +768,30 @@
             updateFromFilters();
         });
 
-        // ----- init with empty state (no sample data) -----
-        // Show empty state
-        document.querySelectorAll('.kpi-value').forEach(el => {
-            el.textContent = '—';
-            el.classList.add('empty');
-        });
-        document.querySelectorAll('.chart-wrapper canvas').forEach(canvas => {
-            const wrapper = canvas.parentElement;
-            const placeholder = document.createElement('div');
-            placeholder.className = 'chart-placeholder';
-            placeholder.textContent = 'Upload data to view chart';
-            wrapper.appendChild(placeholder);
-        });
-        regionSelect.disabled = true;
-        sourceSelect.disabled = true;
-        resetBtn.disabled = true;
-        fileNameSpan.textContent = 'No file';
+        // ----- init: try loading from localStorage -----
+        const stored = loadFromStorage();
+        if (stored && stored.length) {
+            // Reconstruct rows from stored objects
+            const rows = stored.map(d => [d.course, d.region, d.source, d.leads, d.payments]);
+            loadData(rows, false);
+        } else {
+            // Empty state
+            document.querySelectorAll('.kpi-value').forEach(el => {
+                el.textContent = '—';
+                el.classList.add('empty');
+            });
+            document.querySelectorAll('.chart-wrapper canvas').forEach(canvas => {
+                const wrapper = canvas.parentElement;
+                const placeholder = document.createElement('div');
+                placeholder.className = 'chart-placeholder';
+                placeholder.textContent = 'Upload data to view chart';
+                wrapper.appendChild(placeholder);
+            });
+            regionSelect.disabled = true;
+            sourceSelect.disabled = true;
+            resetBtn.disabled = true;
+        }
 
-        // expose loadData for debugging if needed
         window.loadData = loadData;
     })();
 </script>
