@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive Dashboard · Weekly Report</title>
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- SheetJS (XLSX) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #f4f6fa;
+            font-family: 'Inter', sans-serif;
+            padding: 24px;
+            color: #1e293b;
+        }
+        .dashboard { max-width: 1600px; margin: 0 auto; }
+
+        /* header & upload */
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+            gap: 16px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .header h1 {
+            font-weight: 600;
+            font-size: 24px;
+            letter-spacing: -0.3px;
+            background: white;
+            padding: 10px 22px;
+            border-radius: 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header h1 i { color: #3b82f6; }
+
+        .upload-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            padding: 6px 16px 6px 20px;
+            border-radius: 60px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .upload-group label {
+            font-weight: 500;
+            font-size: 13px;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        .upload-group label i { color: #3b82f6; }
+        .upload-group input[type="file"] {
+            display: none;
+        }
+        .upload-group .file-name {
+            font-size: 13px;
+            color: #3b82f6;
+            font-weight: 500;
+            max-width: 140px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .btn-download {
+            background: #1e293b;
+            border: none;
+            color: white;
+            border-radius: 40px;
+            padding: 8px 20px;
+            font-weight: 500;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+        .btn-download:hover { background: #0f172a; }
+
+        .filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            background: white;
+            padding: 8px 20px 8px 24px;
+            border-radius: 60px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            align-items: center;
+        }
+        .filter-group label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .filter-group select {
+            border: 1px solid #e2e8f0;
+            border-radius: 40px;
+            padding: 8px 16px 8px 14px;
+            font-size: 13px;
+            background: white;
+            font-weight: 500;
+            color: #1e293b;
+            outline: none;
+            cursor: pointer;
+            min-width: 130px;
+        }
+        .filter-group select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
+        }
+        .filter-group select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .reset-btn {
+            background: #f1f5f9;
+            border: none;
+            border-radius: 40px;
+            padding: 6px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .reset-btn:hover { background: #e2e8f0; }
+        .reset-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+        .kpi-card {
+            background: white;
+            padding: 18px 20px;
+            border-radius: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            border: 1px solid #f0f2f6;
+            transition: 0.2s;
+        }
+        .kpi-card:hover { border-color: #dbe0e8; }
+        .kpi-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .kpi-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-top: 6px;
+            letter-spacing: -0.5px;
+        }
+        .kpi-value.empty { color: #94a3b8; font-weight: 400; font-size: 24px; }
+        .kpi-sub { font-size: 13px; color: #64748b; margin-top: 4px; }
+        .kpi-icon { color: #3b82f6; opacity: 0.6; }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 22px;
+            margin-bottom: 20px;
+        }
+        .chart-card {
+            background: white;
+            border-radius: 28px;
+            padding: 20px 18px 16px 18px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.02);
+            border: 1px solid #f0f2f6;
+            transition: 0.2s;
+        }
+        .chart-card:hover { border-color: #e0e5ed; }
+        .chart-title {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1e293b;
+        }
+        .chart-title i { color: #3b82f6; font-size: 14px; }
+        .chart-wrapper { position: relative; height: 200px; }
+        .chart-wrapper.tall { height: 220px; }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 80px 20px;
+            color: #94a3b8;
+            background: white;
+            border-radius: 40px;
+            border: 2px dashed #e2e8f0;
+        }
+        .empty-state i { font-size: 56px; margin-bottom: 20px; opacity: 0.3; color: #3b82f6; }
+        .empty-state h3 { font-weight: 500; font-size: 18px; color: #475569; margin-bottom: 8px; }
+        .empty-state p { font-size: 14px; color: #94a3b8; }
+
+        .chart-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #cbd5e1;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        @media (max-width: 700px) {
+            .header { flex-direction: column; align-items: stretch; gap: 16px; }
+            .filter-group { border-radius: 40px; padding: 12px 16px; flex-wrap: wrap; }
+            .chart-grid { grid-template-columns: 1fr; }
+            .header-left { flex-direction: column; align-items: stretch; }
+            .upload-group { border-radius: 40px; justify-content: space-between; }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <!-- header with upload & download -->
+    <div class="header">
+        <div class="header-left">
+            <h1><i class="fas fa-chart-simple"></i> Weekly Pulse</h1>
+            <div class="upload-group">
+                <label for="fileUpload"><i class="fas fa-cloud-upload-alt"></i> Upload .xlsx</label>
+                <input type="file" id="fileUpload" accept=".xlsx,.xls">
+                <span class="file-name" id="fileName">No file</span>
+                <button class="btn-download" id="downloadBtn"><i class="fas fa-download"></i> Download</button>
+            </div>
+        </div>
+        <div class="filter-group" id="filterGroup">
+            <label><i class="fas fa-globe"></i> Region
+                <select id="regionFilter" disabled><option value="All">All</option></select>
+            </label>
+            <label><i class="fas fa-tag"></i> Lead Source
+                <select id="sourceFilter" disabled><option value="All">All</option></select>
+            </label>
+            <button class="reset-btn" id="resetFilters" disabled><i class="fas fa-rotate-left"></i> Reset</button>
+        </div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-grid" id="kpiContainer">
+        <div class="kpi-card"><div class="kpi-label"><i class="fas fa-users kpi-icon"></i> Total Leads</div><div class="kpi-value empty" id="kpiLeads">—</div><div class="kpi-sub">all sources</div></div>
+        <div class="kpi-card"><div class="kpi-label"><i class="fas fa-credit-card kpi-icon"></i> Payments</div><div class="kpi-value empty" id="kpiPayments">—</div><div class="kpi-sub">converted</div></div>
+        <div class="kpi-card"><div class="kpi-label"><i class="fas fa-arrow-up kpi-icon"></i> Conversion %</div><div class="kpi-value empty" id="kpiConv">—</div><div class="kpi-sub">payments / leads</div></div>
+        <div class="kpi-card"><div class="kpi-label"><i class="fas fa-layer-group kpi-icon"></i> Unique Courses</div><div class="kpi-value empty" id="kpiCourses">—</div><div class="kpi-sub">active</div></div>
+    </div>
+
+    <!-- charts -->
+    <div class="chart-grid" id="chartGrid">
+        <div class="chart-card"><div class="chart-title"><i class="fas fa-chart-bar"></i> Leads by Region</div><div class="chart-wrapper"><canvas id="chartRegion"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title"><i class="fas fa-chart-pie"></i> Lead Source Breakdown</div><div class="chart-wrapper"><canvas id="chartSource"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title"><i class="fas fa-crown"></i> Top 8 Courses (Leads)</div><div class="chart-wrapper tall"><canvas id="chartTopCourses"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title"><i class="fas fa-arrow-trend-up"></i> Payment vs Lead (top regions)</div><div class="chart-wrapper"><canvas id="chartRegionPayment"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title"><i class="fas fa-tags"></i> Source Performance (Leads)</div><div class="chart-wrapper"><canvas id="chartSourcePerformance"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title"><i class="fas fa-flag"></i> Region × Source (leads)</div><div class="chart-wrapper tall"><canvas id="chartHeat"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title"><i class="fas fa-list-check"></i> Top 6 Courses by Payment</div><div class="chart-wrapper tall"><canvas id="chartTopPayment"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title"><i class="fas fa-percent"></i> Conversion by Region</div><div class="chart-wrapper"><canvas id="chartConversion"></canvas></div></div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ----- state -----
+        let currentData = [];
+        let charts = {};
+
+        // DOM refs
+        const regionSelect = document.getElementById('regionFilter');
+        const sourceSelect = document.getElementById('sourceFilter');
+        const resetBtn = document.getElementById('resetFilters');
+        const fileInput = document.getElementById('fileUpload');
+        const fileNameSpan = document.getElementById('fileName');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        const kpiLeads = document.getElementById('kpiLeads');
+        const kpiPayments = document.getElementById('kpiPayments');
+        const kpiConv = document.getElementById('kpiConv');
+        const kpiCourses = document.getElementById('kpiCourses');
+
+        // ----- helpers -----
+        function getUnique(arr, key) {
+            const set = new Set(arr.map(d => d[key]).filter(Boolean));
+            return Array.from(set).sort();
+        }
+
+        function filterData(region, source) {
+            return currentData.filter(d => {
+                if (region !== 'All' && d.region !== region) return false;
+                if (source !== 'All' && d.source !== source) return false;
+                return true;
+            });
+        }
+
+        function aggregateBy(arr, key, valKey = 'leads') {
+            const map = new Map();
+            arr.forEach(d => {
+                const k = d[key];
+                if (!k) return;
+                map.set(k, (map.get(k) || 0) + d[valKey]);
+            });
+            return Array.from(map.entries()).map(([label, value]) => ({ label, value }));
+        }
+
+        // ----- render -----
+        function render(region, source) {
+            if (!currentData.length) {
+                // show empty state
+                document.querySelectorAll('.kpi-value').forEach(el => {
+                    el.textContent = '—';
+                    el.classList.add('empty');
+                });
+                // destroy all charts
+                Object.keys(charts).forEach(key => { 
+                    if (charts[key]) { 
+                        try { charts[key].destroy(); } catch(e) {}
+                        delete charts[key]; 
+                    } 
+                });
+                // show placeholder in chart wrappers
+                document.querySelectorAll('.chart-wrapper canvas').forEach(canvas => {
+                    const wrapper = canvas.parentElement;
+                    // remove any existing placeholder
+                    const existing = wrapper.querySelector('.chart-placeholder');
+                    if (existing) existing.remove();
+                    // only add if no chart and no placeholder
+                    if (!wrapper.querySelector('.chart-placeholder')) {
+                        const placeholder = document.createElement('div');
+                        placeholder.className = 'chart-placeholder';
+                        placeholder.textContent = 'Upload data to view chart';
+                        wrapper.appendChild(placeholder);
+                    }
+                });
+                // disable filters
+                regionSelect.disabled = true;
+                sourceSelect.disabled = true;
+                resetBtn.disabled = true;
+                return;
+            }
+
+            // enable filters
+            regionSelect.disabled = false;
+            sourceSelect.disabled = false;
+            resetBtn.disabled = false;
+
+            // remove placeholders
+            document.querySelectorAll('.chart-placeholder').forEach(el => el.remove());
+
+            const filtered = filterData(region, source);
+            const totalLeads = filtered.reduce((s, d) => s + d.leads, 0);
+            const totalPayments = filtered.reduce((s, d) => s + d.payments, 0);
+            const conv = totalLeads > 0 ? (totalPayments / totalLeads * 100) : 0;
+            const uniqueCourses = new Set(filtered.map(d => d.course)).size;
+
+            kpiLeads.textContent = totalLeads;
+            kpiLeads.classList.remove('empty');
+            kpiPayments.textContent = totalPayments;
+            kpiPayments.classList.remove('empty');
+            kpiConv.textContent = conv.toFixed(1) + '%';
+            kpiConv.classList.remove('empty');
+            kpiCourses.textContent = uniqueCourses;
+            kpiCourses.classList.remove('empty');
+
+            // --- 1 region leads ---
+            const regionAgg = aggregateBy(filtered, 'region');
+            updateChart('chartRegion', 'bar', regionAgg.map(d => d.label), regionAgg.map(d => d.value), '#3b82f6', 'Leads');
+
+            // --- 2 source pie ---
+            const sourceAgg = aggregateBy(filtered, 'source');
+            const sortedSource = sourceAgg.sort((a,b) => b.value - a.value);
+            let sourceLabels = sortedSource.slice(0,6).map(d => d.label);
+            let sourceValues = sortedSource.slice(0,6).map(d => d.value);
+            if (sortedSource.length > 6) {
+                const rest = sortedSource.slice(6).reduce((s, d) => s + d.value, 0);
+                sourceLabels.push('Others');
+                sourceValues.push(rest);
+            }
+            updateChart('chartSource', 'pie', sourceLabels, sourceValues, ['#3b82f6','#f59e0b','#10b981','#8b5cf6','#ec4899','#14b8a6','#94a3b8']);
+
+            // --- 3 top 8 courses by leads ---
+            const courseAgg = aggregateBy(filtered, 'course');
+            const topCourses = courseAgg.sort((a,b) => b.value - a.value).slice(0,8);
+            updateChart('chartTopCourses', 'bar', topCourses.map(d => d.label), topCourses.map(d => d.value), '#8b5cf6', 'Leads', true);
+
+            // --- 4 region payments vs leads ---
+            const regionPay = aggregateBy(filtered, 'region');
+            const regionPayMap = new Map();
+            filtered.forEach(d => {
+                regionPayMap.set(d.region, (regionPayMap.get(d.region) || 0) + d.payments);
+            });
+            const regLabels = regionPay.map(d => d.label);
+            const leadVals = regionPay.map(d => d.value);
+            const payVals = regLabels.map(r => regionPayMap.get(r) || 0);
+            const ctx4 = document.getElementById('chartRegionPayment').getContext('2d');
+            if (charts['chartRegionPayment']) { try { charts['chartRegionPayment'].destroy(); } catch(e) {} }
+            charts['chartRegionPayment'] = new Chart(ctx4, {
+                type: 'bar',
+                data: {
+                    labels: regLabels,
+                    datasets: [
+                        { label: 'Leads', data: leadVals, backgroundColor: '#3b82f680', borderRadius: 4 },
+                        { label: 'Payments', data: payVals, backgroundColor: '#10b98180', borderRadius: 4 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+            });
+
+            // --- 5 source performance ---
+            const sourcePerf = aggregateBy(filtered, 'source').sort((a,b) => b.value - a.value).slice(0,8);
+            updateChart('chartSourcePerformance', 'bar', sourcePerf.map(d => d.label), sourcePerf.map(d => d.value), '#f59e0b', 'Leads', true);
+
+            // --- 6 heat: region x source (top 5 sources) ---
+            const topSources = aggregateBy(filtered, 'source').sort((a,b) => b.value - a.value).slice(0,5).map(d => d.label);
+            const heatRegions = getUnique(filtered, 'region');
+            const heatData = heatRegions.map(reg => {
+                return topSources.map(src => {
+                    return filtered.filter(d => d.region === reg && d.source === src).reduce((s,d) => s + d.leads, 0);
+                });
+            });
+            const heatCtx = document.getElementById('chartHeat').getContext('2d');
+            if (charts['chartHeat']) { try { charts['chartHeat'].destroy(); } catch(e) {} }
+            charts['chartHeat'] = new Chart(heatCtx, {
+                type: 'bar',
+                data: {
+                    labels: heatRegions,
+                    datasets: topSources.map((src, idx) => ({
+                        label: src,
+                        data: heatData.map(row => row[idx]),
+                        backgroundColor: ['#3b82f6','#f59e0b','#10b981','#8b5cf6','#ec4899'][idx % 5],
+                    }))
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { x: { stacked: true }, y: { stacked: true } } }
+            });
+
+            // --- 7 top 6 courses by payment ---
+            const payAgg = aggregateBy(filtered, 'course', 'payments');
+            const topPay = payAgg.sort((a,b) => b.value - a.value).slice(0,6);
+            updateChart('chartTopPayment', 'bar', topPay.map(d => d.label), topPay.map(d => d.value), '#10b981', 'Payments', true);
+
+            // --- 8 conversion by region ---
+            const convReg = getUnique(filtered, 'region');
+            const convData = convReg.map(reg => {
+                const leadsR = filtered.filter(d => d.region === reg).reduce((s,d) => s + d.leads, 0);
+                const payR = filtered.filter(d => d.region === reg).reduce((s,d) => s + d.payments, 0);
+                return leadsR > 0 ? (payR / leadsR * 100) : 0;
+            });
+            updateChart('chartConversion', 'bar', convReg, convData, '#8b5cf6', 'Conversion %');
+        }
+
+        function updateChart(id, type, labels, data, color, label, horizontal = false) {
+            const ctx = document.getElementById(id).getContext('2d');
+            if (charts[id]) { try { charts[id].destroy(); } catch(e) {} }
+            const isPie = type === 'pie';
+            const colors = Array.isArray(color) ? color : (labels.map(() => color));
+            charts[id] = new Chart(ctx, {
+                type: type,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: label || '',
+                        data: data,
+                        backgroundColor: isPie ? colors : (Array.isArray(color) ? color : colors),
+                        borderColor: isPie ? colors : '#ffffff',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: horizontal ? 'y' : 'x',
+                    plugins: {
+                        legend: { display: isPie ? true : false, position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        // ----- populate filters -----
+        function populateFilters() {
+            if (!currentData.length) {
+                regionSelect.innerHTML = '<option value="All">All</option>';
+                sourceSelect.innerHTML = '<option value="All">All</option>';
+                return;
+            }
+            const regions = getUnique(currentData, 'region');
+            const sources = getUnique(currentData, 'source');
+            regionSelect.innerHTML = '<option value="All">All</option>' + regions.map(r => `<option value="${r}">${r}</option>`).join('');
+            sourceSelect.innerHTML = '<option value="All">All</option>' + sources.map(s => `<option value="${s}">${s}</option>`).join('');
+        }
+
+        // ----- load data from parsed rows -----
+        function loadData(rows) {
+            currentData = rows.map(row => {
+                let region = (row[1] || '').toString().trim();
+                if (region.toUpperCase() === 'INDIA') region = 'India';
+                return {
+                    course: (row[0] || '').toString().trim(),
+                    region: region,
+                    source: (row[2] || '').toString().trim(),
+                    leads: Number(row[3]) || 0,
+                    payments: row[4] ? Number(row[4]) : 0
+                };
+            });
+            populateFilters();
+            render('All', 'All');
+        }
+
+        // ----- handle file upload -----
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    // skip header if first row looks like header
+                    let rows = json;
+                    if (rows.length > 0 && rows[0].some(cell => /course|region|lead|source|payment/i.test(String(cell)))) {
+                        rows = rows.slice(1);
+                    }
+                    loadData(rows);
+                    fileNameSpan.textContent = file.name;
+                } catch (err) {
+                    alert('Error reading file: ' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // ----- download current dashboard (HTML) -----
+        downloadBtn.addEventListener('click', () => {
+            const doctype = '<!DOCTYPE html>\n';
+            const html = document.documentElement.outerHTML;
+            const blob = new Blob([doctype + html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'dashboard.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // ----- filter events -----
+        function updateFromFilters() {
+            const region = regionSelect.value;
+            const source = sourceSelect.value;
+            render(region, source);
+        }
+        regionSelect.addEventListener('change', updateFromFilters);
+        sourceSelect.addEventListener('change', updateFromFilters);
+        resetBtn.addEventListener('click', () => {
+            regionSelect.value = 'All';
+            sourceSelect.value = 'All';
+            updateFromFilters();
+        });
+
+        // ----- init with empty state (no sample data) -----
+        // Show empty state
+        document.querySelectorAll('.kpi-value').forEach(el => {
+            el.textContent = '—';
+            el.classList.add('empty');
+        });
+        document.querySelectorAll('.chart-wrapper canvas').forEach(canvas => {
+            const wrapper = canvas.parentElement;
+            const placeholder = document.createElement('div');
+            placeholder.className = 'chart-placeholder';
+            placeholder.textContent = 'Upload data to view chart';
+            wrapper.appendChild(placeholder);
+        });
+        regionSelect.disabled = true;
+        sourceSelect.disabled = true;
+        resetBtn.disabled = true;
+        fileNameSpan.textContent = 'No file';
+
+        // expose loadData for debugging if needed
+        window.loadData = loadData;
+    })();
+</script>
+</body>
+</html>
