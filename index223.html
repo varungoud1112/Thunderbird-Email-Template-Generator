@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -156,6 +157,42 @@
             cursor: not-allowed;
         }
 
+        /* New download buttons group */
+        .download-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 6px 16px 6px 20px;
+            border-radius: 60px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .download-group .btn-download {
+            background: #1e293b;
+            border: none;
+            color: white;
+            border-radius: 40px;
+            padding: 8px 18px;
+            font-weight: 500;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+        .download-group .btn-download:hover { background: #0f172a; }
+        .download-group .btn-download.outline {
+            background: transparent;
+            color: #1e293b;
+            border: 1px solid #e2e8f0;
+        }
+        .download-group .btn-download.outline:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+
         .kpi-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -246,6 +283,7 @@
             .chart-grid { grid-template-columns: 1fr; }
             .header-left { flex-direction: column; align-items: stretch; }
             .upload-group { border-radius: 40px; justify-content: space-between; }
+            .download-group { justify-content: center; }
         }
     </style>
 </head>
@@ -262,14 +300,21 @@
                 <button class="btn-download" id="downloadBtn"><i class="fas fa-download"></i> Download</button>
             </div>
         </div>
-        <div class="filter-group" id="filterGroup">
-            <label><i class="fas fa-globe"></i> Region
-                <select id="regionFilter" disabled><option value="All">All</option></select>
-            </label>
-            <label><i class="fas fa-tag"></i> Lead Source
-                <select id="sourceFilter" disabled><option value="All">All</option></select>
-            </label>
-            <button class="reset-btn" id="resetFilters" disabled><i class="fas fa-rotate-left"></i> Reset</button>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+            <!-- NEW: Download HTML & Export PDF buttons -->
+            <div class="download-group">
+                <button class="btn-download outline" id="downloadHtmlBtn"><i class="fas fa-code"></i> Download HTML</button>
+                <button class="btn-download" id="exportPdfBtn"><i class="fas fa-file-pdf"></i> Export PDF</button>
+            </div>
+            <div class="filter-group" id="filterGroup">
+                <label><i class="fas fa-globe"></i> Region
+                    <select id="regionFilter" disabled><option value="All">All</option></select>
+                </label>
+                <label><i class="fas fa-tag"></i> Lead Source
+                    <select id="sourceFilter" disabled><option value="All">All</option></select>
+                </label>
+                <button class="reset-btn" id="resetFilters" disabled><i class="fas fa-rotate-left"></i> Reset</button>
+            </div>
         </div>
     </div>
 
@@ -307,6 +352,8 @@
         const fileInput = document.getElementById('fileUpload');
         const fileNameSpan = document.getElementById('fileName');
         const downloadBtn = document.getElementById('downloadBtn');
+        const downloadHtmlBtn = document.getElementById('downloadHtmlBtn');
+        const exportPdfBtn = document.getElementById('exportPdfBtn');
 
         const kpiLeads = document.getElementById('kpiLeads');
         const kpiPayments = document.getElementById('kpiPayments');
@@ -583,6 +630,26 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+        });
+
+        // ----- NEW: Download HTML (same as above but separate button) -----
+        downloadHtmlBtn.addEventListener('click', () => {
+            const doctype = '<!DOCTYPE html>\n';
+            const html = document.documentElement.outerHTML;
+            const blob = new Blob([doctype + html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'dashboard.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // ----- NEW: Export PDF (uses window.print) -----
+        exportPdfBtn.addEventListener('click', () => {
+            window.print();
         });
 
         // ----- filter events -----
