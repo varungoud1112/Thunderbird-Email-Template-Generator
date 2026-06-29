@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Excel Filter - Country Wise</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+    </script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f4f8;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 1450px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px 35px;
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1a2634;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+        .sub {
+            color: #4a5b6e;
+            margin-bottom: 25px;
+            font-size: 15px;
+            border-left: 4px solid #2a7de1;
+            padding-left: 18px;
+            background: #f8faff;
+            border-radius: 0 10px 10px 0;
+            line-height: 1.6;
+        }
+        .upload-area {
+            background: #f8fcff;
+            border: 2px dashed #b6cde3;
+            border-radius: 16px;
+            padding: 28px 20px;
+            text-align: center;
+            margin-bottom: 28px;
+            transition: 0.2s;
+        }
+        .upload-area:hover {
+            border-color: #2a7de1;
+            background: #f2f9ff;
+        }
+        .upload-area input {
+            font-size: 15px;
+            padding: 8px 14px;
+            background: white;
+            border: 1px solid #cbd8e6;
+            border-radius: 30px;
+            cursor: pointer;
+        }
+        .upload-area .hint {
+            margin-top: 12px;
+            font-size: 14px;
+            color: #3d5a78;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 15px;
+            margin: 18px 0 20px;
+            background: #f3f7fd;
+            padding: 16px 20px;
+            border-radius: 14px;
+        }
+        .controls label {
+            font-weight: 500;
+            color: #1f2b38;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        .controls input[type="text"] {
+            padding: 8px 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 30px;
+            font-size: 14px;
+            background: white;
+        }
+        .controls .country-input {
+            flex: 1;
+            min-width: 150px;
+        }
+        .controls .generated-by-input {
+            max-width: 180px;
+            min-width: 120px;
+        }
+        .controls button {
+            background: #1a5fb4;
+            border: none;
+            color: white;
+            padding: 9px 28px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 10px rgba(26, 95, 180, 0.25);
+            white-space: nowrap;
+        }
+        .controls button:hover {
+            background: #0e4a92;
+            transform: scale(1.02);
+        }
+        .controls button:disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .stats {
+            font-size: 14px;
+            color: #1f3a5f;
+            background: #eaf1fb;
+            padding: 8px 18px;
+            border-radius: 40px;
+            display: inline-block;
+            white-space: nowrap;
+        }
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 14px;
+            border: 1px solid #e2eaf2;
+            margin: 20px 0 12px;
+            background: white;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            min-width: 1700px;
+        }
+        th {
+            background: #eef3fa;
+            color: #1e2b3a;
+            font-weight: 600;
+            padding: 10px 8px;
+            text-align: left;
+            border-bottom: 2px solid #d0ddee;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        td {
+            padding: 8px 8px;
+            border-bottom: 1px solid #e6edf5;
+            vertical-align: top;
+            word-break: break-word;
+        }
+        tr:hover td {
+            background: #f6faff;
+        }
+        .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: #5f738c;
+            font-size: 15px;
+        }
+        .export-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 20px;
+            gap: 12px;
+        }
+        .export-bar .btn-excel {
+            background: #1e7e34;
+            border: none;
+            color: white;
+            padding: 10px 32px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 10px rgba(30, 126, 52, 0.25);
+        }
+        .export-bar .btn-excel:hover {
+            background: #14632a;
+            transform: scale(1.02);
+        }
+        .export-bar .btn-excel:disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .badge {
+            background: #1a5fb4;
+            color: white;
+            border-radius: 40px;
+            padding: 2px 14px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .footer-note {
+            margin-top: 25px;
+            font-size: 13px;
+            color: #3e5a77;
+            background: #f2f6fc;
+            padding: 12px 20px;
+            border-radius: 30px;
+            text-align: center;
+        }
+        .phone-col {
+            font-weight: 600;
+            color: #0b5a2a;
+        }
+        .email-col {
+            font-size: 11px;
+            color: #1a4f7a;
+        }
+        .country-tag {
+            background: #e8f0fe;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
+        .date-col {
+            font-weight: 500;
+            color: #1a3a5a;
+            white-space: nowrap;
+        }
+        .generated-by-col {
+            font-weight: 600;
+            color: #8a2a2a;
+        }
+        .dropdown-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 5px 0;
+            position: absolute;
+            z-index: 100;
+            min-width: 200px;
+            display: none;
+        }
+        .dropdown-list.show {
+            display: block;
+        }
+        .dropdown-list li {
+            padding: 6px 16px;
+            cursor: pointer;
+            list-style: none;
+        }
+        .dropdown-list li:hover {
+            background: #eef3fa;
+        }
+        .country-input-wrap {
+            position: relative;
+            flex: 1;
+            min-width: 180px;
+        }
+        .country-input-wrap input {
+            width: 100%;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .control-group label {
+            margin: 0;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .country-input-wrap {
+                min-width: unset;
+            }
+            .control-group {
+                flex-wrap: wrap;
+            }
+            .controls .generated-by-input {
+                max-width: unset;
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <h1>📊 Country Filter & Export Tool</h1>
+        <div class="sub">
+            Upload <strong>Harika.xlsx</strong> → Select Country → Preview → Download filtered Excel with all columns.<br>
+            ✅ Country detected from <strong>Country</strong> column OR <strong>Location</strong> column.<br>
+            ✅ Phone numbers extracted from: <strong>Contact no</strong> → <strong>LK Contact</strong> → fallback.<br>
+            ✅ Dates formatted as <strong>DD-MM-YYYY</strong> (not Excel serial numbers).<br>
+            ✅ <strong>Generated By</strong> - Enter your name manually (separate from Generated AC Name).
+        </div>
+
+        <div class="upload-area">
+            <input type="file" id="fileInput" accept=".xlsx,.xls" />
+            <div class="hint">📁 Upload .xlsx or .xls file</div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="generatedByInput">👤 Generated By:</label>
+                <input type="text" id="generatedByInput" class="generated-by-input" placeholder="Enter your name..." value="" />
+            </div>
+
+            <div class="control-group" style="flex:1;">
+                <label for="countryInput">🌍 Country:</label>
+                <div class="country-input-wrap">
+                    <input type="text" id="countryInput" class="country-input" placeholder="Type country name..." value="India" />
+                    <ul class="dropdown-list" id="countryDropdown"></ul>
+                </div>
+            </div>
+
+            <button id="filterBtn">🔍 Apply Filter</button>
+            <span class="stats" id="rowCount">0 rows</span>
+        </div>
+
+        <div class="table-wrap">
+            <table id="resultTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Generated By</th>
+                        <th>Generated AC Name</th>
+                        <th>Date</th>
+                        <th>Full Name</th>
+                        <th>Country</th>
+                        <th>Location</th>
+                        <th>Course</th>
+                        <th>Email ID</th>
+                        <th>Sonu Comment</th>
+                        <th>Phone Number</th>
+                        <th>LK Email</th>
+                        <th>LK Contact</th>
+                        <th>Pricing Followup</th>
+                        <th>Profile Link</th>
+                        <th>Designation</th>
+                        <th>Industry</th>
+                        <th>Company</th>
+                        <th>Note1</th>
+                        <th>Note 2</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="20" class="empty-state">⬆️ Upload an Excel file to start.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="export-bar">
+            <div>
+                <span id="countryBadge" class="badge">—</span>
+                <span style="margin-left:12px;color:#2f4b6b;" id="exportInfo">0 records</span>
+            </div>
+            <button class="btn-excel" id="exportBtn" disabled>⬇ Download Excel (.xlsx)</button>
+        </div>
+
+        <div class="footer-note">
+            <strong>Phone Number Logic:</strong> Contact no → LK Contact → Email ID (if numeric) → LK Email (if numeric)<br>
+            <strong>Email columns:</strong> Keep only valid email addresses (phone numbers are moved to Phone Number column)<br>
+            <strong>Date format:</strong> DD-MM-YYYY (e.g., 01-05-2026)<br>
+            <strong>Generated By:</strong> Manually entered value (separate from Generated AC Name)
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            let workbookData = null;
+            let filteredData = [];
+            let allCountries = new Set();
+
+            const fileInput = document.getElementById('fileInput');
+            const countryInput = document.getElementById('countryInput');
+            const generatedByInput = document.getElementById('generatedByInput');
+            const filterBtn = document.getElementById('filterBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const tableBody = document.getElementById('tableBody');
+            const rowCount = document.getElementById('rowCount');
+            const countryBadge = document.getElementById('countryBadge');
+            const exportInfo = document.getElementById('exportInfo');
+            const countryDropdown = document.getElementById('countryDropdown');
+
+            // --------------------------------------------------------------
+            // DATE FORMATTING FUNCTIONS
+            // --------------------------------------------------------------
+
+            function excelSerialToDate(serial) {
+                if (!serial) return '';
+                if (typeof serial === 'string') {
+                    const parsed = new Date(serial);
+                    if (!isNaN(parsed)) {
+                        return formatDate(parsed);
+                    }
+                    const num = parseFloat(serial);
+                    if (!isNaN(num) && num > 59) {
+                        return excelSerialToDate(num);
+                    }
+                    return serial;
+                }
+                if (typeof serial === 'number') {
+                    const epoch = new Date(1899, 11, 30);
+                    const date = new Date(epoch.getTime() + serial * 86400000);
+                    if (!isNaN(date)) {
+                        return formatDate(date);
+                    }
+                    return serial.toString();
+                }
+                if (serial instanceof Date) {
+                    return formatDate(serial);
+                }
+                return serial ? serial.toString() : '';
+            }
+
+            function formatDate(date) {
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}-${month}-${year}`;
+            }
+
+            function parseDate(value) {
+                if (!value) return '';
+                if (typeof value === 'number') {
+                    return excelSerialToDate(value);
+                }
+                if (typeof value === 'string') {
+                    const cleaned = value.trim();
+                    const num = parseFloat(cleaned);
+                    if (!isNaN(num) && cleaned.match(/^\d+$/)) {
+                        return excelSerialToDate(num);
+                    }
+                    const parsed = new Date(cleaned);
+                    if (!isNaN(parsed)) {
+                        return formatDate(parsed);
+                    }
+                    const formats = [
+                        /^(\d{4})-(\d{2})-(\d{2})/,
+                        /^(\d{2})\/(\d{2})\/(\d{4})/,
+                        /^(\d{2})-(\d{2})-(\d{4})/,
+                        /^(\d{2})\.(\d{2})\.(\d{4})/,
+                        /^(\d{4})\/(\d{2})\/(\d{2})/,
+                    ];
+                    for (const pattern of formats) {
+                        const match = cleaned.match(pattern);
+                        if (match) {
+                            let year, month, day;
+                            if (cleaned.includes('-') || cleaned.includes('/')) {
+                                if (match[1].length === 4) {
+                                    year = parseInt(match[1]);
+                                    month = parseInt(match[2]);
+                                    day = parseInt(match[3]);
+                                } else {
+                                    year = parseInt(match[3]);
+                                    month = parseInt(match[1]);
+                                    day = parseInt(match[2]);
+                                }
+                            }
+                            if (year && month && day) {
+                                const d = new Date(year, month - 1, day);
+                                if (!isNaN(d)) {
+                                    return formatDate(d);
+                                }
+                            }
+                        }
+                    }
+                    return cleaned;
+                }
+                if (value instanceof Date) {
+                    return formatDate(value);
+                }
+                return value ? value.toString() : '';
+            }
+
+            // --------------------------------------------------------------
+            // CORE FUNCTIONS
+            // --------------------------------------------------------------
+
+            function isValidEmail(value) {
+                if (!value || typeof value !== 'string') return false;
+                const trimmed = value.trim();
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+            }
+
+            function looksLikePhone(value) {
+                if (!value || typeof value !== 'string') return false;
+                const trimmed = value.trim();
+                return /\d{5,}/.test(trimmed) && !trimmed.includes('@');
+            }
+
+            function getPhoneNumber(row) {
+                let phone = (row['Contact no'] || '').toString().trim();
+                if (phone && phone !== '-' && phone !== 'NA' && phone !== '' && phone !== '—') {
+                    return phone;
+                }
+                phone = (row['LK Contact'] || '').toString().trim();
+                if (phone && phone !== '-' && phone !== 'NA' && phone !== '' && phone !== '—') {
+                    return phone;
+                }
+                const emailId = (row['Email ID'] || '').toString().trim();
+                if (looksLikePhone(emailId) && !isValidEmail(emailId)) {
+                    return emailId;
+                }
+                const lkEmail = (row['LK Email'] || '').toString().trim();
+                if (looksLikePhone(lkEmail) && !isValidEmail(lkEmail)) {
+                    return lkEmail;
+                }
+                return '';
+            }
+
+            function getCleanEmail(value) {
+                if (!value || typeof value !== 'string') return '';
+                const trimmed = value.trim();
+                if (isValidEmail(trimmed)) {
+                    return trimmed;
+                }
+                return '';
+            }
+
+            function extractCountry(row) {
+                let country = (row['Country'] || '').toString().trim();
+                if (country && country !== '-' && country !== 'NA' && country !== '') {
+                    return country;
+                }
+                const location = (row['Location'] || '').toString().trim();
+                if (!location || location === '-' || location === 'NA') return '';
+
+                const countryKeywords = [
+                    'India', 'USA', 'United States', 'UAE', 'United Arab Emirates',
+                    'UK', 'United Kingdom', 'Canada', 'Australia', 'Brazil', 'South Africa',
+                    'Germany', 'France', 'Italy', 'Spain', 'Netherlands', 'Belgium',
+                    'Switzerland', 'Sweden', 'Norway', 'Denmark', 'Finland', 'Poland',
+                    'Portugal', 'Greece', 'Turkey', 'Egypt', 'Saudi Arabia', 'Qatar',
+                    'Kuwait', 'Oman', 'Bahrain', 'Morocco', 'Tunisia', 'Kenya',
+                    'Nigeria', 'Ghana', 'Sri Lanka', 'Bangladesh', 'Pakistan',
+                    'Nepal', 'Malaysia', 'Singapore', 'Philippines', 'Thailand',
+                    'Vietnam', 'Indonesia', 'New Zealand', 'Mexico', 'Colombia',
+                    'Chile', 'Argentina', 'Peru', 'Venezuela', 'Costa Rica',
+                    'Panama', 'Ireland', 'Scotland', 'Wales', 'England',
+                    'Northern Ireland', 'South America', 'Europe', 'Asia'
+                ];
+
+                for (const kw of countryKeywords) {
+                    if (location.includes(kw)) {
+                        return kw;
+                    }
+                }
+                return location;
+            }
+
+            function normalizeCountry(country) {
+                if (!country) return '';
+                const map = {
+                    'united states': 'USA',
+                    'us': 'USA',
+                    'usa': 'USA',
+                    'united arab emirates': 'UAE',
+                    'uae': 'UAE',
+                    'united kingdom': 'UK',
+                    'uk': 'UK',
+                    'south america': 'Brazil',
+                    'brazil': 'Brazil',
+                    'canada': 'Canada',
+                    'australia': 'Australia',
+                    'india': 'India',
+                };
+                const key = country.toLowerCase().trim();
+                if (map[key]) return map[key];
+                return country.split(' ').map(w =>
+                    w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+                ).join(' ');
+            }
+
+            // --------------------------------------------------------------
+            // PARSE EXCEL
+            // --------------------------------------------------------------
+            function parseExcelFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                            const json = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+                            resolve(json);
+                        } catch (err) {
+                            reject(err);
+                        }
+                    };
+                    reader.onerror = reject;
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            // --------------------------------------------------------------
+            // FILTER DATA
+            // --------------------------------------------------------------
+            function filterByCountry(data, country) {
+                if (!data || data.length === 0) return [];
+                if (!country || country.trim() === '') return data;
+
+                const search = country.trim().toLowerCase();
+                const results = [];
+
+                for (const row of data) {
+                    const c = extractCountry(row);
+                    const normalized = normalizeCountry(c);
+                    if (normalized.toLowerCase() === search || c.toLowerCase().includes(search)) {
+                        results.push(row);
+                    }
+                }
+                return results;
+            }
+
+            // --------------------------------------------------------------
+            // RENDER TABLE
+            // --------------------------------------------------------------
+            function renderTable(data, countryFilter) {
+                const tbody = tableBody;
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="20" class="empty-state">${countryFilter ? 'No records found for "' + countryFilter + '"' : '⬆️ Upload and filter to see results.'}</td></tr>`;
+                    rowCount.textContent = '0 rows';
+                    exportInfo.textContent = '0 records';
+                    countryBadge.textContent = countryFilter || '—';
+                    exportBtn.disabled = true;
+                    return;
+                }
+
+                // Get the manually entered "Generated By" value
+                const generatedBy = generatedByInput.value.trim() || '';
+
+                let html = '';
+                data.forEach((row, idx) => {
+                    const generatedAC = (row['Generated AC Name'] || '').toString().trim();
+                    const dateRaw = row['Date'];
+                    const dateFormatted = parseDate(dateRaw);
+                    const name = (row['Full Name'] || '').toString().trim();
+                    const country = extractCountry(row);
+                    const location = (row['Location'] || '').toString().trim();
+                    const course = (row['Course'] || '').toString().trim();
+                    const emailId = getCleanEmail(row['Email ID']);
+                    const lkEmail = getCleanEmail(row['LK Email']);
+                    const sonuComment = (row['Sonu Comment'] || '').toString().trim();
+                    const phoneNumber = getPhoneNumber(row);
+                    const lkContact = (row['LK Contact'] || '').toString().trim();
+                    const pricing = (row['Pricing Followup'] || '').toString().trim();
+                    const profileLink = (row['Profile Link'] || '').toString().trim();
+                    const designation = (row['Designation'] || '').toString().trim();
+                    const industry = (row['Industry'] || '').toString().trim();
+                    const company = (row['Company'] || '').toString().trim();
+                    const note1 = (row['Note1'] || '').toString().trim();
+                    const note2 = (row['Note 2'] || '').toString().trim();
+
+                    html += `<tr>
+                                <td>${idx + 1}</td>
+                                <td class="generated-by-col"><strong>${generatedBy || '—'}</strong></td>
+                                <td style="font-size:11px;">${generatedAC || '—'}</td>
+                                <td class="date-col">${dateFormatted || '—'}</td>
+                                <td><strong>${name || '—'}</strong></td>
+                                <td><span class="country-tag">${country || '—'}</span></td>
+                                <td>${location || '—'}</td>
+                                <td style="max-width:150px;">${course || '—'}</td>
+                                <td class="email-col">${emailId || '—'}</td>
+                                <td style="font-size:11px;">${sonuComment || '—'}</td>
+                                <td class="phone-col">${phoneNumber || '—'}</td>
+                                <td class="email-col">${lkEmail || '—'}</td>
+                                <td>${lkContact || '—'}</td>
+                                <td>${pricing || '—'}</td>
+                                <td style="font-size:10px;max-width:100px;word-break:break-all;">${profileLink || '—'}</td>
+                                <td>${designation || '—'}</td>
+                                <td>${industry || '—'}</td>
+                                <td>${company || '—'}</td>
+                                <td>${note1 || '—'}</td>
+                                <td>${note2 || '—'}</td>
+                            </tr>`;
+                });
+
+                tbody.innerHTML = html;
+                rowCount.textContent = data.length + ' rows';
+                exportInfo.textContent = data.length + ' records';
+                countryBadge.textContent = countryFilter || 'All';
+                exportBtn.disabled = false;
+            }
+
+            // --------------------------------------------------------------
+            // EXPORT TO EXCEL
+            // --------------------------------------------------------------
+            function exportToExcel(data, countryName) {
+                if (!data || data.length === 0) {
+                    alert('No data to export.');
+                    return;
+                }
+
+                // Get the manually entered "Generated By" value
+                const generatedBy = generatedByInput.value.trim() || '';
+
+                const exportRows = data.map(row => {
+                    const dateRaw = row['Date'];
+                    const dateFormatted = parseDate(dateRaw);
+                    return {
+                        'Generated By': generatedBy,
+                        'Generated AC Name': (row['Generated AC Name'] || '').toString().trim(),
+                        'Date': dateFormatted,
+                        'Full Name': (row['Full Name'] || '').toString().trim(),
+                        'Country': extractCountry(row),
+                        'Location': (row['Location'] || '').toString().trim(),
+                        'Course': (row['Course'] || '').toString().trim(),
+                        'Email ID': getCleanEmail(row['Email ID']),
+                        'Sonu Comment': (row['Sonu Comment'] || '').toString().trim(),
+                        'Phone Number': getPhoneNumber(row),
+                        'LK Email': getCleanEmail(row['LK Email']),
+                        'LK Contact': (row['LK Contact'] || '').toString().trim(),
+                        'Pricing Followup': (row['Pricing Followup'] || '').toString().trim(),
+                        'Profile Link': (row['Profile Link'] || '').toString().trim(),
+                        'Designation': (row['Designation'] || '').toString().trim(),
+                        'Industry': (row['Industry'] || '').toString().trim(),
+                        'Company': (row['Company'] || '').toString().trim(),
+                        'Note1': (row['Note1'] || '').toString().trim(),
+                        'Note 2': (row['Note 2'] || '').toString().trim()
+                    };
+                });
+
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(exportRows);
+                XLSX.utils.book_append_sheet(wb, ws, 'Filtered Data');
+
+                const colWidths = [
+                    { wch: 18 }, // Generated By
+                    { wch: 18 }, // Generated AC Name
+                    { wch: 14 }, // Date
+                    { wch: 28 }, // Full Name
+                    { wch: 14 }, // Country
+                    { wch: 22 }, // Location
+                    { wch: 50 }, // Course
+                    { wch: 28 }, // Email ID
+                    { wch: 20 }, // Sonu Comment
+                    { wch: 18 }, // Phone Number
+                    { wch: 28 }, // LK Email
+                    { wch: 16 }, // LK Contact
+                    { wch: 20 }, // Pricing Followup
+                    { wch: 35 }, // Profile Link
+                    { wch: 18 }, // Designation
+                    { wch: 18 }, // Industry
+                    { wch: 20 }, // Company
+                    { wch: 20 }, // Note1
+                    { wch: 20 }, // Note 2
+                ];
+                ws['!cols'] = colWidths;
+
+                const fileName = `Filtered_${countryName || 'All'}_${new Date().toISOString().slice(0,10)}.xlsx`;
+                XLSX.writeFile(wb, fileName);
+            }
+
+            // --------------------------------------------------------------
+            // UPDATE COUNTRY DROPDOWN
+            // --------------------------------------------------------------
+            function updateCountryDropdown() {
+                const search = countryInput.value.toLowerCase().trim();
+                const filtered = Array.from(allCountries)
+                    .filter(c => c.toLowerCase().includes(search))
+                    .sort();
+
+                if (filtered.length === 0 || search === '') {
+                    countryDropdown.classList.remove('show');
+                    return;
+                }
+
+                countryDropdown.innerHTML = filtered.map(c =>
+                    `<li onclick="document.getElementById('countryInput').value='${c}'; document.getElementById('countryDropdown').classList.remove('show'); document.getElementById('filterBtn').click();">${c}</li>`
+                ).join('');
+                countryDropdown.classList.add('show');
+            }
+
+            // --------------------------------------------------------------
+            // LOAD & PROCESS
+            // --------------------------------------------------------------
+            async function loadAndProcess(file) {
+                try {
+                    const json = await parseExcelFile(file);
+                    if (!json || json.length === 0) {
+                        alert('No data found in the file.');
+                        return;
+                    }
+                    workbookData = json;
+
+                    allCountries = new Set();
+                    json.forEach(row => {
+                        const c = extractCountry(row);
+                        if (c && c !== '-' && c !== 'NA' && c !== '') {
+                            allCountries.add(c);
+                        }
+                    });
+
+                    applyFilter();
+                } catch (err) {
+                    console.error(err);
+                    alert('Error reading file: ' + err.message);
+                }
+            }
+
+            function applyFilter() {
+                if (!workbookData || workbookData.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="20" class="empty-state">⬆️ Please upload an Excel file first.</td></tr>`;
+                    rowCount.textContent = '0 rows';
+                    exportInfo.textContent = '0 records';
+                    countryBadge.textContent = '—';
+                    exportBtn.disabled = true;
+                    return;
+                }
+
+                const country = countryInput.value.trim();
+                const filtered = filterByCountry(workbookData, country);
+                filteredData = filtered;
+                renderTable(filtered, country || 'All');
+                updateCountryDropdown();
+            }
+
+            // --------------------------------------------------------------
+            // EVENT LISTENERS
+            // --------------------------------------------------------------
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (!['xlsx', 'xls'].includes(ext)) {
+                    alert('Please upload a valid Excel file (.xlsx or .xls)');
+                    fileInput.value = '';
+                    return;
+                }
+                loadAndProcess(file);
+            });
+
+            filterBtn.addEventListener('click', applyFilter);
+
+            // Enter key on any input triggers filter
+            countryInput.addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    applyFilter();
+                } else {
+                    updateCountryDropdown();
+                }
+            });
+
+            generatedByInput.addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    applyFilter();
+                }
+            });
+
+            countryInput.addEventListener('focus', function() {
+                if (allCountries.size > 0) {
+                    updateCountryDropdown();
+                }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.country-input-wrap')) {
+                    countryDropdown.classList.remove('show');
+                }
+            });
+
+            exportBtn.addEventListener('click', function() {
+                if (!filteredData || filteredData.length === 0) {
+                    alert('No data to export. Please apply a filter first.');
+                    return;
+                }
+                const country = countryInput.value.trim() || 'All';
+                exportToExcel(filteredData, country);
+            });
+
+            // --------------------------------------------------------------
+            // INIT
+            // --------------------------------------------------------------
+            countryInput.value = 'India';
+            console.log('✅ Country Filter Tool ready. Upload your Excel file.');
+            console.log('📌 Country detection: Country column → Location column');
+            console.log('📌 Phone Number: Contact no → LK Contact → Email (if numeric)');
+            console.log('📌 Email columns: Only valid email addresses kept');
+            console.log('📌 Date format: DD-MM-YYYY');
+            console.log('📌 Generated By: Manually entered value (separate from Generated AC Name)');
+
+        })();
+    </script>
+
+</body>
+</html>
