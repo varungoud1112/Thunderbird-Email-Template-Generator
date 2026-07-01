@@ -1,0 +1,2422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Three Reports Dashboard</title>
+
+    <!-- ─── Shared Libraries ─── -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js">
+    </script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js">
+    </script>
+
+    <style>
+        /* ─── Reset & Base ─── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f4f9;
+            padding: 16px 24px 24px;
+            color: #1a1a2e;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e8ecf1;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4f46e5;
+            border-radius: 8px;
+        }
+
+        .app-wrapper {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        /* ─── Navigation ─── */
+        .page-nav {
+            background: #fff;
+            border-radius: 16px;
+            padding: 12px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px 28px;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+        .page-nav .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            color: #1a1a2e;
+            margin-right: 12px;
+        }
+        .page-nav .brand span {
+            font-weight: 300;
+            color: #6b7280;
+        }
+        .page-nav .nav-items {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+        .page-nav .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px 8px 14px;
+            border-radius: 40px;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            font-weight: 500;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            position: relative;
+        }
+        .page-nav .nav-item .num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #edf2f7;
+            color: #4b5563;
+            font-weight: 700;
+            font-size: 13px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .page-nav .nav-item .label {
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .page-nav .nav-item:hover {
+            background: #f3f4f6;
+        }
+        .page-nav .nav-item:hover .num {
+            background: #d1d5db;
+        }
+        .page-nav .nav-item.active {
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+        .page-nav .nav-item.active .num {
+            background: #4f46e5;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+        }
+        .page-nav .nav-item .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+            display: none;
+        }
+        .page-nav .nav-item.has-data .dot {
+            display: inline-block;
+        }
+
+        @media (max-width: 600px) {
+            .page-nav {
+                padding: 10px 16px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            .page-nav .brand {
+                font-size: 14px;
+            }
+            .page-nav .nav-items {
+                margin-left: 0;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            .page-nav .nav-item {
+                padding: 6px 12px 6px 10px;
+                font-size: 12px;
+            }
+            .page-nav .nav-item .num {
+                width: 24px;
+                height: 24px;
+                font-size: 11px;
+            }
+            .page-nav .nav-item .label {
+                font-size: 11px;
+            }
+        }
+
+        /* ─── Report Pages ─── */
+        .report-page {
+            display: none;
+            animation: fadeUp 0.4s ease forwards;
+        }
+        .report-page.active {
+            display: block;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ─── Toast (shared) ─── */
+        .toast-msg {
+            background: #1e3349;
+            color: white;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            opacity: 0;
+            transition: 0.3s;
+            pointer-events: none;
+        }
+        .toast-msg.show {
+            opacity: 1;
+        }
+
+        /* ─── Report containers ───
+           Previously this had max-height: calc(100vh - 180px) + overflow-y: auto,
+           which created a cramped inner scroll box that didn't account for the
+           actual height of the header/filters/KPIs above it. That's what was
+           cutting off chart titles and squeezing the grid in the screenshot.
+           The page now scrolls naturally as a whole (same fix that was already
+           applied to the "Download HTML" export version, now applied here too). */
+        .report-scroll {
+            padding-right: 4px;
+        }
+
+        /* ─── Shared report styles (applied inside each report) ─── */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+        .kpi-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 18px 22px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .kpi-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.07);
+        }
+        .kpi-card .label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 6px;
+        }
+        .kpi-card .value {
+            font-size: 30px;
+            font-weight: 700;
+            color: #1a1a2e;
+            line-height: 1.2;
+        }
+        .kpi-card .change {
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 10px;
+            border-radius: 20px;
+            background: #ecfdf5;
+            color: #059669;
+        }
+        .kpi-card .change.negative {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+        .kpi-card .icon-bg {
+            position: absolute;
+            right: 14px;
+            top: 14px;
+            font-size: 32px;
+            opacity: 0.10;
+        }
+        .kpi-card .accent-line {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            border-radius: 4px 0 0 4px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 22px;
+            margin-bottom: 22px;
+        }
+        .chart-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px 20px 14px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            transition: box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+        .chart-card:hover {
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+        }
+        .chart-card .chart-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .chart-card .chart-title .badge {
+            font-size: 11px;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 20px;
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+        .chart-wrapper {
+            position: relative;
+            height: 210px;
+        }
+        .chart-wrapper.tall {
+            height: 240px;
+        }
+        .charts-grid .span-full {
+            grid-column: 1 / -1;
+        }
+        .charts-grid .span-full .chart-wrapper {
+            height: 200px;
+        }
+
+        @media (max-width: 1100px) {
+            .charts-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .charts-grid .span-full {
+                grid-column: 1 / -1;
+            }
+        }
+        @media (max-width: 700px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            .charts-grid .span-full {
+                grid-column: 1;
+            }
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            .kpi-card .value {
+                font-size: 22px;
+            }
+        }
+        @media (max-width: 420px) {
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ─── Header inside each report ─── */
+        .report-header {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4f46e5 100%);
+            border-radius: 20px;
+            padding: 24px 32px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 12px 40px rgba(79, 70, 229, 0.30);
+        }
+        .report-header .left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .report-header .left .icon {
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            backdrop-filter: blur(4px);
+            flex-shrink: 0;
+        }
+        .report-header .left h1 {
+            color: #fff;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .report-header .left h1 span {
+            font-weight: 300;
+            opacity: 0.7;
+        }
+        .report-header .left .sub {
+            color: rgba(255, 255, 255, 0.65);
+            font-size: 13px;
+            font-weight: 400;
+            margin-top: 2px;
+        }
+        .report-header .right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .report-header .right .badge-rec {
+            font-size: 13px;
+            background: rgba(255, 255, 255, 0.12);
+            padding: 5px 14px;
+            border-radius: 40px;
+            color: #fff;
+            font-weight: 500;
+        }
+        .upload-btn {
+            padding: 8px 18px;
+            border-radius: 12px;
+            border: none;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(4px);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: inherit;
+        }
+        .upload-btn:hover {
+            background: rgba(255, 255, 255, 0.22);
+        }
+        .upload-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .upload-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .download-btn {
+            padding: 8px 18px;
+            border-radius: 12px;
+            border: none;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(4px);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: inherit;
+        }
+        .download-btn:hover {
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        .filter-bar {
+            background: #fff;
+            border-radius: 16px;
+            padding: 14px 22px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px 16px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+        .filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 14px;
+            flex: 1;
+        }
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: #f8fafc;
+            padding: 2px 10px 2px 12px;
+            border-radius: 40px;
+            border: 1px solid #e2eaf2;
+            transition: 0.15s;
+            height: 34px;
+        }
+        .filter-item:hover {
+            border-color: #b8ccdd;
+        }
+        .filter-item label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #3a5a78;
+            letter-spacing: 0.2px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            white-space: nowrap;
+        }
+        .filter-item label i {
+            font-size: 11px;
+            color: #4a6f8e;
+        }
+        .filter-item select {
+            background: transparent;
+            border: none;
+            padding: 0 16px 0 4px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #1a2b3c;
+            cursor: pointer;
+            outline: none;
+            min-width: 60px;
+            height: 28px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234a6f8e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 2px center;
+            background-size: 10px;
+            appearance: none;
+            font-family: inherit;
+        }
+        .filter-item select:hover {
+            color: #0b1e33;
+        }
+        .reset-btn {
+            padding: 6px 16px;
+            border-radius: 40px;
+            border: none;
+            background: #edf2f7;
+            color: #1f3a57;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 34px;
+            font-family: inherit;
+        }
+        .reset-btn:hover {
+            background: #dce4ec;
+        }
+
+        .footer-note {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 13px;
+            padding: 16px 0 4px;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 12px;
+        }
+
+        /* ─── Responsive tweaks ─── */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px 12px 12px;
+            }
+            .report-header {
+                padding: 16px 18px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            .report-header .left h1 {
+                font-size: 18px;
+            }
+            .report-header .right {
+                justify-content: stretch;
+            }
+            .filter-bar {
+                padding: 10px 14px;
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-group {
+                flex-wrap: wrap;
+            }
+            .reset-btn {
+                align-self: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-wrapper">
+
+        <!-- ═══════════════ NAVIGATION ═══════════════ -->
+        <nav class="page-nav" id="mainNav">
+            <div class="brand">📊 <span>Reports</span></div>
+            <div class="nav-items">
+                <button class="nav-item active" data-page="1">
+                    <span class="num">1</span>
+                    <span class="label">Executive</span>
+                    <span class="dot" id="dot1"></span>
+                </button>
+                <button class="nav-item" data-page="2">
+                    <span class="num">2</span>
+                    <span class="label">CAM</span>
+                    <span class="dot" id="dot2"></span>
+                </button>
+                <button class="nav-item" data-page="3">
+                    <span class="num">3</span>
+                    <span class="label">Lead</span>
+                    <span class="dot" id="dot3"></span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- ═══════════════ REPORT 1 ═══════════════ -->
+        <div id="report1" class="report-page active">
+            <div class="report-scroll">
+
+                <!-- ─── Header ─── -->
+                <header class="report-header">
+                    <div class="left">
+                        <div class="icon">📊</div>
+                        <div>
+                            <h1>Report 1 <span>Executive</span></h1>
+                            <div class="sub">Certification &amp; Training Analytics</div>
+                        </div>
+                    </div>
+                    <div class="right">
+                        <span class="badge-rec" id="r1_badge"><i class="fas fa-database"></i> 0 records</span>
+                        <div class="upload-wrapper">
+                            <button class="upload-btn" id="r1_uploadBtn"><i class="fas fa-upload"></i> Upload Excel</button>
+                            <input type="file" id="r1_fileInput" accept=".xlsx,.xls" />
+                        </div>
+                        <button class="download-btn" data-report="1">⬇ Download HTML</button>
+                        <span id="r1_toast" class="toast-msg">✅ Data loaded</span>
+                    </div>
+                </header>
+
+                <!-- ─── Filters ─── -->
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <div class="filter-item"><label><i class="fas fa-certificate"></i> Accred.</label><select id="r1_filterAccred"><option value="all">All</option></select></div>
+                        <div class="filter-item"><label><i class="fas fa-globe"></i> Country</label><select id="r1_filterCountry"><option value="all">All</option></select></div>
+                        <div class="filter-item"><label><i class="fas fa-graduation-cap"></i> Course</label><select id="r1_filterCourse"><option value="all">All</option></select></div>
+                        <div class="filter-item"><label><i class="fas fa-tag"></i> Source</label><select id="r1_filterSource"><option value="all">All</option></select></div>
+                        <div class="filter-item"><label><i class="fas fa-map-pin"></i> Region</label><select id="r1_filterRegion"><option value="all">All</option></select></div>
+                    </div>
+                    <button class="reset-btn" id="r1_resetFilters"><i class="fas fa-undo-alt"></i> Reset</button>
+                </div>
+
+                <!-- ─── KPIs ─── -->
+                <section class="kpi-grid">
+                    <div class="kpi-card"><div class="accent-line" style="background:#4f46e5;"></div><div class="label">Total Pax</div><div class="value" id="r1_kpiTotal">0</div><div class="change" id="r1_kpiTotalChange">● registrations</div><div class="icon-bg">📋</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#7c3aed;"></div><div class="label">Countries</div><div class="value" id="r1_kpiCountries">0</div><div class="change" id="r1_kpiCountriesChange">● unique</div><div class="icon-bg">🌍</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#06b6d4;"></div><div class="label">Courses</div><div class="value" id="r1_kpiCourses">0</div><div class="change" id="r1_kpiCoursesChange">● distinct</div><div class="icon-bg">📚</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#10b981;"></div><div class="label">Accreditations</div><div class="value" id="r1_kpiAccred">0</div><div class="change" id="r1_kpiAccredChange">● unique</div><div class="icon-bg">🏅</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#f59e0b;"></div><div class="label">Sources</div><div class="value" id="r1_kpiSources">0</div><div class="change" id="r1_kpiSourcesChange">● distinct</div><div class="icon-bg">🔗</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#ef4444;"></div><div class="label">Regions</div><div class="value" id="r1_kpiRegions">0</div><div class="change" id="r1_kpiRegionsChange">● active</div><div class="icon-bg">🗺️</div></div>
+                </section>
+
+                <!-- ─── Charts ─── -->
+                <section class="charts-grid">
+                    <div class="chart-card"><div class="chart-title">Country Distribution <span class="badge">donut</span></div><div class="chart-wrapper"><canvas id="r1_chartCountry"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">Course Breakdown <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r1_chartCourse"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">Accreditation <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r1_chartAccred"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">Source Breakdown <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r1_chartSource"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">Region <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r1_chartRegion"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">Course · Accred Combo <span class="badge">grouped</span></div><div class="chart-wrapper"><canvas id="r1_chartCombo"></canvas></div></div>
+                    <div class="chart-card span-full"><div class="chart-title">Region · Accred Combo <span class="badge">grouped</span></div><div class="chart-wrapper tall"><canvas id="r1_chartRegionAccred"></canvas></div></div>
+                </section>
+
+                <div class="footer-note">⚡ Upload your Excel file with columns: Accrediation, Region, Source, Country, Course, Pax</div>
+
+            </div>
+        </div>
+
+        <!-- ═══════════════ REPORT 2 ═══════════════ -->
+        <div id="report2" class="report-page">
+            <div class="report-scroll">
+
+                <!-- ─── Header ─── -->
+                <header class="report-header">
+                    <div class="left">
+                        <div class="icon">📊</div>
+                        <div>
+                            <h1>CAM <span>Executive</span></h1>
+                            <div class="sub">Certification &amp; Training Analytics</div>
+                        </div>
+                    </div>
+                    <div class="right">
+                        <span class="badge-rec" id="r2_badge"><i class="fas fa-database"></i> 0 records</span>
+                        <div class="upload-wrapper">
+                            <button class="upload-btn" id="r2_uploadBtn"><i class="fas fa-upload"></i> Upload Excel</button>
+                            <input type="file" id="r2_fileInput" accept=".xlsx,.xls" />
+                        </div>
+                        <button class="download-btn" data-report="2">⬇ Download HTML</button>
+                        <span id="r2_toast" class="toast-msg">✅ Data loaded</span>
+                    </div>
+                </header>
+
+                <!-- ─── Filters ─── -->
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <div class="filter-item"><label><i class="fas fa-user-tie"></i> CAM</label><select id="r2_filterCam"><option value="all">All</option></select></div>
+                        <div class="filter-item"><label><i class="fas fa-globe"></i> Country</label><select id="r2_filterCountry"><option value="all">All</option></select></div>
+                        <div class="filter-item"><label><i class="fas fa-graduation-cap"></i> Course</label><select id="r2_filterCourse"><option value="all">All</option></select></div>
+                        <div class="filter-item"><label><i class="fas fa-tag"></i> Source</label><select id="r2_filterSource"><option value="all">All</option></select></div>
+                        <div class="filter-item"><label><i class="fas fa-map-pin"></i> Region</label><select id="r2_filterRegion"><option value="all">All</option></select></div>
+                        <div class="filter-item"><label><i class="fas fa-certificate"></i> Acc.</label><select id="r2_filterAccred"><option value="all">All</option></select></div>
+                    </div>
+                    <button class="reset-btn" id="r2_resetFilters"><i class="fas fa-undo-alt"></i> Reset</button>
+                </div>
+
+                <!-- ─── KPIs ─── -->
+                <section class="kpi-grid">
+                    <div class="kpi-card"><div class="accent-line" style="background:#4f46e5;"></div><div class="label">Total Records</div><div class="value" id="r2_kpiTotal">0</div><div class="change" id="r2_kpiTotalChange">● records</div><div class="icon-bg">📋</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#7c3aed;"></div><div class="label">Countries</div><div class="value" id="r2_kpiCountries">0</div><div class="change" id="r2_kpiCountriesChange">● unique</div><div class="icon-bg">🌍</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#06b6d4;"></div><div class="label">Courses</div><div class="value" id="r2_kpiCourses">0</div><div class="change" id="r2_kpiCoursesChange">● distinct</div><div class="icon-bg">📚</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#10b981;"></div><div class="label">Accreditations</div><div class="value" id="r2_kpiAccred">0</div><div class="change" id="r2_kpiAccredChange">● unique</div><div class="icon-bg">🏅</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#f59e0b;"></div><div class="label">CAM Team</div><div class="value" id="r2_kpiCamMembers">0</div><div class="change" id="r2_kpiCamMembersChange">● members</div><div class="icon-bg">👥</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#ef4444;"></div><div class="label">Sources</div><div class="value" id="r2_kpiSources">0</div><div class="change" id="r2_kpiSourcesChange">● distinct</div><div class="icon-bg">🔗</div></div>
+                </section>
+
+                <!-- ─── Charts ─── -->
+                <section class="charts-grid">
+                    <div class="chart-card"><div class="chart-title">Country Distribution <span class="badge">donut</span></div><div class="chart-wrapper"><canvas id="r2_chartCountry"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">Course Breakdown <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r2_chartCourse"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">Accreditation <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r2_chartAccred"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">CAM Team Activity <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r2_chartCam"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">Source Breakdown <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r2_chartSource"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">Region <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r2_chartRegion"></canvas></div></div>
+                    <div class="chart-card span-full"><div class="chart-title">Course · Accreditation Combo <span class="badge">grouped</span></div><div class="chart-wrapper tall"><canvas id="r2_chartCombo"></canvas></div></div>
+                    <div class="chart-card span-full"><div class="chart-title">CAM Team by Country <span class="badge">grouped</span></div><div class="chart-wrapper tall"><canvas id="r2_chartCamCountry"></canvas></div></div>
+                </section>
+
+                <div class="footer-note">⚡ Upload your Excel file with columns: CAM Team, Country, Source, Course, Region, Accrediation</div>
+
+            </div>
+        </div>
+
+        <!-- ═══════════════ REPORT 3 ═══════════════ -->
+        <div id="report3" class="report-page">
+            <div class="report-scroll">
+
+                <!-- ─── Header ─── -->
+                <header class="report-header">
+                    <div class="left">
+                        <div class="icon">📊</div>
+                        <div>
+                            <h1>Lead <span>Executive</span></h1>
+                            <div class="sub">Real-time performance &amp; ROI dashboard</div>
+                        </div>
+                    </div>
+                    <div class="right">
+                        <span class="badge-rec" id="r3_badge"><i class="fas fa-database"></i> 0 records</span>
+                        <div class="upload-wrapper">
+                            <button class="upload-btn" id="r3_uploadBtn"><i class="fas fa-upload"></i> Upload Excel</button>
+                            <input type="file" id="r3_fileInput" accept=".xlsx,.xls" />
+                        </div>
+                        <button class="download-btn" data-report="3">⬇ Download HTML</button>
+                        <span id="r3_toast" class="toast-msg">✅ Data loaded</span>
+                    </div>
+                </header>
+
+                <!-- ─── Filters ─── -->
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <div class="filter-item"><label><i class="fas fa-tag"></i> Source</label><select id="r3_filterSource"><option value="all">All Sources</option></select></div>
+                    </div>
+                    <button class="reset-btn" id="r3_resetFilters"><i class="fas fa-undo-alt"></i> Reset</button>
+                </div>
+
+                <!-- ─── KPIs ─── -->
+                <section class="kpi-grid">
+                    <div class="kpi-card"><div class="accent-line" style="background:#4f46e5;"></div><div class="label">Total Leads</div><div class="value" id="r3_kpiLeads">—</div><div class="change" id="r3_kpiLeadsChange">● —</div><div class="icon-bg">👥</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#7c3aed;"></div><div class="label">Total Spent</div><div class="value" id="r3_kpiSpent">—</div><div class="change" id="r3_kpiSpentChange">● —</div><div class="icon-bg">💰</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#06b6d4;"></div><div class="label">Total Revenue</div><div class="value" id="r3_kpiRevenue">—</div><div class="change" id="r3_kpiRevenueChange">● —</div><div class="icon-bg">📈</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#10b981;"></div><div class="label">Avg. Lead Cost</div><div class="value" id="r3_kpiAvgCost">—</div><div class="change" id="r3_kpiAvgCostChange">● —</div><div class="icon-bg">🏷️</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#f59e0b;"></div><div class="label">Total Payments</div><div class="value" id="r3_kpiPayments">—</div><div class="change" id="r3_kpiPaymentsChange">● —</div><div class="icon-bg">✅</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#ef4444;"></div><div class="label">Overall ROI</div><div class="value" id="r3_kpiROI">—</div><div class="change" id="r3_kpiROIChange">● —</div><div class="icon-bg">🎯</div></div>
+                </section>
+
+                <!-- ─── Charts ─── -->
+                <section class="charts-grid">
+                    <div class="chart-card"><div class="chart-title">Lead Distribution <span class="badge">donut</span></div><div class="chart-wrapper"><canvas id="r3_chartLeadDist"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">Revenue by Source <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r3_chartRevenue"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">Spent by Source <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r3_chartSpent"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">Lead Cost by Source <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r3_chartLeadCost"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">Revenue vs Spent <span class="badge">grouped</span></div><div class="chart-wrapper"><canvas id="r3_chartRevVsSpent"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">ROI by Source <span class="badge">%</span></div><div class="chart-wrapper"><canvas id="r3_chartROI"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">Revenue per Lead <span class="badge">INR</span></div><div class="chart-wrapper"><canvas id="r3_chartRevPerLead"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">Conversion Rate <span class="badge">%</span></div><div class="chart-wrapper"><canvas id="r3_chartConvRate"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">Payments by Source <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r3_chartPayments"></canvas></div></div>
+                </section>
+
+                <div class="footer-note">⚡ Upload your Excel file with columns: Source, Lead Count, Lead Cost, Spent, Payments, Revenue</div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- NAVIGATION & DOWNLOAD SCRIPTS              -->
+    <!-- ════════════════════════════════════════════ -->
+    <script>
+        (function() {
+            // ─── Navigation ───
+            const navItems = document.querySelectorAll('.nav-item');
+            const pages = {
+                1: document.getElementById('report1'),
+                2: document.getElementById('report2'),
+                3: document.getElementById('report3')
+            };
+
+            function showPage(num) {
+                navItems.forEach(el => {
+                    el.classList.toggle('active', parseInt(el.dataset.page) === num);
+                });
+                Object.keys(pages).forEach(key => {
+                    pages[key].classList.toggle('active', parseInt(key) === num);
+                });
+            }
+
+            navItems.forEach(el => {
+                el.addEventListener('click', function() {
+                    const num = parseInt(this.dataset.page);
+                    showPage(num);
+                    setTimeout(() => {
+                        const container = pages[num];
+                        if (container) {
+                            const canvases = container.querySelectorAll('canvas');
+                            canvases.forEach(c => {
+                                if (window.dispatchEvent) {
+                                    window.dispatchEvent(new Event('resize'));
+                                }
+                            });
+                        }
+                    }, 100);
+                });
+            });
+
+            window.r1_hasData = false;
+            window.r2_hasData = false;
+            window.r3_hasData = false;
+
+            function updateDots() {
+                document.getElementById('dot1').style.display = window.r1_hasData ? 'inline-block' : 'none';
+                document.getElementById('dot2').style.display = window.r2_hasData ? 'inline-block' : 'none';
+                document.getElementById('dot3').style.display = window.r3_hasData ? 'inline-block' : 'none';
+            }
+            window.updateReportDots = updateDots;
+            updateDots();
+
+            // ─── Download functionality ───
+            function generateReportHTML(reportNum) {
+                const reportId = 'report' + reportNum;
+                const reportEl = document.getElementById(reportId);
+                const clone = reportEl.cloneNode(true);
+                // Strip anything that would let the recipient see/reuse the
+                // upload or download controls — they should only ever see
+                // the finished dashboard with its filters.
+                clone.querySelectorAll('.download-btn').forEach(el => el.remove());
+                clone.querySelectorAll('.upload-wrapper').forEach(el => el.remove());
+                clone.querySelectorAll('.reset-btn').forEach(el => el.remove());
+                clone.querySelectorAll('.footer-note').forEach(el => el.remove());
+                let content = clone.innerHTML;
+                // get CSS
+                const styles = document.querySelector('style').innerHTML;
+                const titles = { 1: 'Executive Dashboard', 2: 'CAM Executive Dashboard', 3: 'Lead Executive Dashboard' };
+                const pageTitle = titles[reportNum];
+                // get the script for this report by searching for the PREFIX constant
+                const prefix = 'r' + reportNum + '_';
+                const scripts = document.querySelectorAll('script');
+                let reportScript = '';
+                for (let s of scripts) {
+                    if (s.textContent.includes("const PREFIX = '" + prefix + "'")) {
+                        reportScript = s.textContent;
+                        break;
+                    }
+                }
+                // fallback: if not found, try to find by the report ID in comments
+                if (!reportScript) {
+                    // try to get by searching for the report script block by the prefix in the content
+                    for (let s of scripts) {
+                        if (s.textContent.includes('PREFIX = \'' + prefix)) {
+                            reportScript = s.textContent;
+                            break;
+                        }
+                    }
+                }
+                // Ensure we have the script
+                if (!reportScript) {
+                    console.warn('Could not find script for report', reportNum);
+                    reportScript = '// Script not found';
+                }
+
+                // Snapshot the currently-loaded data so the recipient sees
+                // the real dashboard immediately — no upload step required.
+                const getDataFn = window[prefix + 'getData'];
+                const snapshot = typeof getDataFn === 'function' ? (getDataFn() || []) : [];
+                // Base64-encode so the JSON can be safely dropped inside a
+                // template literal without worrying about quotes/backticks.
+                const dataB64 = btoa(unescape(encodeURIComponent(JSON.stringify(snapshot))));
+
+                // We also need the global navigation/dot script? Not needed in standalone.
+                return `<!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>${pageTitle}</title>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"><\/script>
+            <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"><\/script>
+            <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"><\/script>
+            <style>${styles}
+                html, body { min-height: 100vh; }
+                .app-wrapper { max-width: 1600px; }
+                .report-scroll { max-height: none !important; overflow: visible !important; }
+            <\/style>
+        </head>
+        <body>
+            <div class="app-wrapper" style="margin:0 auto;padding:16px 24px 32px;">
+                ${content}
+            </div>
+            <script>window.EMBEDDED_DATA = JSON.parse(decodeURIComponent(escape(atob('${dataB64}'))));<\/script>
+            <script>${reportScript}<\/script>
+            <script>
+                (function() {
+                    var setFn = window['${prefix}setData'];
+                    if (window.EMBEDDED_DATA && window.EMBEDDED_DATA.length && typeof setFn === 'function') {
+                        setFn(window.EMBEDDED_DATA);
+                    }
+                })();
+            <\/script>
+        </body>
+        </html>`;
+            }
+
+            document.querySelectorAll('.download-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const reportNum = this.dataset.report;
+                    let html = '';
+                    let filename = '';
+                    if (reportNum === '1') {
+                        html = generateReportHTML(1);
+                        filename = 'Executive_Dashboard.html';
+                    } else if (reportNum === '2') {
+                        html = generateReportHTML(2);
+                        filename = 'CAM_Executive_Dashboard.html';
+                    } else if (reportNum === '3') {
+                        html = generateReportHTML(3);
+                        filename = 'Lead_Executive_Dashboard.html';
+                    }
+                    const blob = new Blob([html], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                });
+            });
+
+        })();
+    </script>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- REPORT 1 JAVASCRIPT                        -->
+    <!-- ════════════════════════════════════════════ -->
+    <script>
+        (function() {
+            'use strict';
+
+            // ─── Data store ───
+            let currentData = [];
+            let currentFilters = { accred: 'all', country: 'all', course: 'all', source: 'all', region: 'all' };
+            const chartInstances = {};
+            const PREFIX = 'r1_';
+
+            function getEl(id) { return document.getElementById(PREFIX + id); }
+
+            function getUniqueValues(arr, key) {
+                const set = new Set(arr.map(d => d[key]).filter(v => v !== undefined && v !== ''));
+                return [...set].sort();
+            }
+
+            function filterData(data, filters) {
+                return data.filter(d => {
+                    if (filters.accred !== 'all' && d.accred !== filters.accred) return false;
+                    if (filters.country !== 'all' && d.country !== filters.country) return false;
+                    if (filters.course !== 'all' && d.course !== filters.course) return false;
+                    if (filters.source !== 'all' && d.source !== filters.source) return false;
+                    if (filters.region !== 'all' && d.region !== filters.region) return false;
+                    return true;
+                });
+            }
+
+            function sumPax(arr, key) {
+                const map = new Map();
+                arr.forEach(d => {
+                    const val = d[key];
+                    const pax = d.pax || 1;
+                    map.set(val, (map.get(val) || 0) + pax);
+                });
+                return map;
+            }
+
+            function render() {
+                const filtered = filterData(currentData, currentFilters);
+                updateKPIs(filtered);
+                updateCharts(filtered);
+                updateBadge(filtered.length);
+                populateFilterOptions();
+                window.r1_hasData = currentData.length > 0;
+                if (typeof window.updateReportDots === 'function') window.updateReportDots();
+            }
+
+            function updateBadge(count) {
+                getEl('badge').innerHTML = `<i class="fas fa-database"></i> ${count} records`;
+            }
+
+            function updateKPIs(data) {
+                const totalPax = data.reduce((s, d) => s + (d.pax || 1), 0);
+                getEl('kpiTotal').textContent = totalPax;
+                getEl('kpiTotalChange').textContent = '● ' + totalPax + ' registrations';
+
+                const countries = new Set(data.map(d => d.country));
+                getEl('kpiCountries').textContent = countries.size;
+                getEl('kpiCountriesChange').textContent = '● ' + countries.size + ' unique';
+
+                const courses = new Set(data.map(d => d.course));
+                getEl('kpiCourses').textContent = courses.size;
+                getEl('kpiCoursesChange').textContent = '● ' + courses.size + ' distinct';
+
+                const accs = new Set(data.map(d => d.accred));
+                getEl('kpiAccred').textContent = accs.size;
+                getEl('kpiAccredChange').textContent = '● ' + accs.size + ' unique';
+
+                const sources = new Set(data.map(d => d.source));
+                getEl('kpiSources').textContent = sources.size;
+                getEl('kpiSourcesChange').textContent = '● ' + sources.size + ' distinct';
+
+                const regions = new Set(data.map(d => d.region));
+                getEl('kpiRegions').textContent = regions.size;
+                getEl('kpiRegionsChange').textContent = '● ' + regions.size + ' active';
+            }
+
+            function updateCharts(data) {
+                function renderChart(id, labels, values, label, colorPalette = null, type = 'bar', options = {}) {
+                    const ctx = document.getElementById(PREFIX + id).getContext('2d');
+                    if (chartInstances[id]) chartInstances[id].destroy();
+                    if (!labels.length) {
+                        chartInstances[id] = new Chart(ctx, {
+                            type: 'bar',
+                            data: { labels: ['No data'],
+                                datasets: [{ label: label, data: [0], backgroundColor: '#dce4ec' }] },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                        });
+                        return;
+                    }
+                    const colors = colorPalette || ['#4f46e5', '#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+                        '#ec4899'
+                    ];
+                    const bg = labels.map((_, i) => colors[i % colors.length]);
+                    const defaultOpts = {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: '#edf2f7' } },
+                            x: { grid: { display: false } }
+                        }
+                    };
+                    const mergedOpts = { ...defaultOpts, ...options };
+                    chartInstances[id] = new Chart(ctx, {
+                        type: type,
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: label,
+                                data: values,
+                                backgroundColor: bg,
+                                borderColor: bg.map(c => c),
+                                borderWidth: 1,
+                                borderRadius: 4,
+                            }]
+                        },
+                        options: mergedOpts
+                    });
+                }
+
+                // Country (Donut)
+                const countryMap = sumPax(data, 'country');
+                const countryLabels = [...countryMap.keys()];
+                const countryValues = countryLabels.map(k => countryMap.get(k));
+                const ctxCountry = document.getElementById(PREFIX + 'chartCountry').getContext('2d');
+                if (chartInstances['chartCountry']) chartInstances['chartCountry'].destroy();
+                if (!countryLabels.length) {
+                    chartInstances['chartCountry'] = new Chart(ctxCountry, {
+                        type: 'doughnut',
+                        data: { labels: ['No data'], datasets: [{ data: [1], backgroundColor: '#dce4ec' }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } } }
+                    });
+                } else {
+                    const colors = ['#4f46e5', '#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
+                    chartInstances['chartCountry'] = new Chart(ctxCountry, {
+                        type: 'doughnut',
+                        data: {
+                            labels: countryLabels,
+                            datasets: [{
+                                data: countryValues,
+                                backgroundColor: countryLabels.map((_, i) => colors[i % colors.length]),
+                                borderColor: '#fff',
+                                borderWidth: 2,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                                tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + ' pax' } }
+                            },
+                            cutout: '62%',
+                        }
+                    });
+                }
+
+                // Course
+                const courseMap = sumPax(data, 'course');
+                let courseLabels = [...courseMap.keys()];
+                let courseValues = courseLabels.map(k => courseMap.get(k));
+                const sorted = courseLabels.map((k, i) => ({ label: k, value: courseValues[i] })).sort((a, b) => b.value - a
+                .value);
+                courseLabels = sorted.slice(0, 8).map(d => d.label);
+                courseValues = sorted.slice(0, 8).map(d => d.value);
+                renderChart('chartCourse', courseLabels, courseValues, 'Pax', null, 'bar');
+
+                // Accreditation
+                const accredMap = sumPax(data, 'accred');
+                const accredLabels = [...accredMap.keys()];
+                const accredValues = accredLabels.map(k => accredMap.get(k));
+                renderChart('chartAccred', accredLabels, accredValues, 'Pax', null, 'bar');
+
+                // Source
+                const sourceMap = sumPax(data, 'source');
+                const sourceLabels = [...sourceMap.keys()];
+                const sourceValues = sourceLabels.map(k => sourceMap.get(k));
+                renderChart('chartSource', sourceLabels, sourceValues, 'Pax', null, 'bar');
+
+                // Region
+                const regionMap = sumPax(data, 'region');
+                const regionLabels = [...regionMap.keys()];
+                const regionValues = regionLabels.map(k => regionMap.get(k));
+                renderChart('chartRegion', regionLabels, regionValues, 'Pax', null, 'bar');
+
+                // Combo: Course · Accreditation
+                const comboContainer = document.getElementById(PREFIX + 'chartCombo');
+                const comboLabels = [...new Set(data.map(d => d.course))].slice(0, 6);
+                const accredSet = [...new Set(data.map(d => d.accred))].slice(0, 5);
+                const datasets = accredSet.map(acc => {
+                    const vals = comboLabels.map(course => {
+                        return data.filter(d => d.course === course && d.accred === acc).reduce((s, r) => s + (r
+                        .pax || 1), 0);
+                    });
+                    return {
+                        label: acc,
+                        data: vals,
+                        backgroundColor: ['#4f46e5', '#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'][accredSet
+                            .indexOf(acc) % 6]
+                    };
+                });
+                if (chartInstances['chartCombo']) chartInstances['chartCombo'].destroy();
+                const ctxCombo = comboContainer.getContext('2d');
+                if (comboLabels.length === 0) {
+                    chartInstances['chartCombo'] = new Chart(ctxCombo, {
+                        type: 'bar',
+                        data: { labels: ['No data'], datasets: [{ label: 'none', data: [0], backgroundColor: '#dce4ec' }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                    });
+                } else {
+                    chartInstances['chartCombo'] = new Chart(ctxCombo, {
+                        type: 'bar',
+                        data: { labels: comboLabels, datasets: datasets },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: true, position: 'top', labels: { boxWidth: 12, fontSize: 10 } }
+                            },
+                            scales: {
+                                x: { stacked: false, grid: { display: false } },
+                                y: { beginAtZero: true, grid: { color: '#edf2f7' } }
+                            }
+                        }
+                    });
+                }
+
+                // Region · Accreditation Combo
+                const regionAccredContainer = document.getElementById(PREFIX + 'chartRegionAccred');
+                const regionLabelsCombo = [...new Set(data.map(d => d.region))].slice(0, 6);
+                const accredSetCombo = [...new Set(data.map(d => d.accred))].slice(0, 5);
+                const regionDatasets = accredSetCombo.map(acc => {
+                    const vals = regionLabelsCombo.map(region => {
+                        return data.filter(d => d.region === region && d.accred === acc).reduce((s, r) => s + (r
+                        .pax || 1), 0);
+                    });
+                    return {
+                        label: acc,
+                        data: vals,
+                        backgroundColor: ['#4f46e5', '#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'][
+                            accredSetCombo.indexOf(acc) % 6]
+                    };
+                });
+                if (chartInstances['chartRegionAccred']) chartInstances['chartRegionAccred'].destroy();
+                const ctxRegionAccred = regionAccredContainer.getContext('2d');
+                if (regionLabelsCombo.length === 0) {
+                    chartInstances['chartRegionAccred'] = new Chart(ctxRegionAccred, {
+                        type: 'bar',
+                        data: { labels: ['No data'], datasets: [{ label: 'none', data: [0], backgroundColor: '#dce4ec' }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                    });
+                } else {
+                    chartInstances['chartRegionAccred'] = new Chart(ctxRegionAccred, {
+                        type: 'bar',
+                        data: { labels: regionLabelsCombo, datasets: regionDatasets },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: true, position: 'top', labels: { boxWidth: 12, fontSize: 10 } }
+                            },
+                            scales: {
+                                x: { stacked: false, grid: { display: false } },
+                                y: { beginAtZero: true, grid: { color: '#edf2f7' } }
+                            }
+                        }
+                    });
+                }
+            }
+
+            function populateFilterOptions() {
+                const fields = ['accred', 'country', 'course', 'source', 'region'];
+                const selectIds = ['filterAccred', 'filterCountry', 'filterCourse', 'filterSource', 'filterRegion'];
+                fields.forEach((f, idx) => {
+                    const values = getUniqueValues(currentData, f);
+                    const sel = getEl(selectIds[idx]);
+                    const currentVal = sel.value;
+                    sel.innerHTML = '';
+                    const allOpt = document.createElement('option');
+                    allOpt.value = 'all';
+                    allOpt.innerText = 'All';
+                    sel.appendChild(allOpt);
+                    values.forEach(v => {
+                        const opt = document.createElement('option');
+                        opt.value = v;
+                        opt.innerText = v;
+                        sel.appendChild(opt);
+                    });
+                    if ([...sel.options].some(o => o.value === currentVal)) {
+                        sel.value = currentVal;
+                    } else {
+                        sel.value = 'all';
+                        currentFilters[f] = 'all';
+                    }
+                });
+            }
+
+            function loadExcelData(file) {
+                if (!/\.(xlsx|xls)$/i.test(file.name)) {
+                    showToast('⚠️ Wrong file format. Please upload a .xlsx or .xls Excel file', 'warning');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const json = XLSX.utils.sheet_to_json(firstSheet);
+                        if (!json || json.length === 0) {
+                            showToast('⚠️ No data found', 'warning');
+                            return;
+                        }
+                        const mapped = json.map(row => {
+                            return {
+                                accred: (row['Accrediation'] || row['Accreditation'] || row['accred'] || '')
+                                .toString().trim(),
+                                region: (row['Region'] || row['region'] || '').toString().trim(),
+                                source: (row['Source'] || row['source'] || '').toString().trim(),
+                                country: (row['Country'] || row['country'] || '').toString().trim(),
+                                course: (row['Course'] || row['course'] || '').toString().trim(),
+                                pax: parseInt(row['Pax'] || row['pax'] || 1) || 1
+                            };
+                        }).filter(d => d.course && d.accred);
+                        if (mapped.length === 0) {
+                            showToast('⚠️ Could not parse columns. Expected: Accrediation, Region, Source, Country, Course, Pax',
+                                'warning');
+                            return;
+                        }
+                        currentData = mapped;
+                        Object.keys(currentFilters).forEach(k => currentFilters[k] = 'all');
+                        document.querySelectorAll('#report1 .filter-item select').forEach(sel => sel.value = 'all');
+                        render();
+                        showToast(`✅ Loaded ${mapped.length} records`, 'success');
+                    } catch (err) {
+                        showToast('❌ Error: ' + err.message, 'error');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+
+            function showToast(msg, type = 'success') {
+                const el = getEl('toast');
+                el.innerText = msg;
+                el.style.background = type === 'success' ? '#1e3349' : type === 'warning' ? '#b85c00' : '#b12a2a';
+                el.classList.add('show');
+                clearTimeout(el._hide);
+                el._hide = setTimeout(() => el.classList.remove('show'), 2800);
+                // Wrong file format / missing columns / parse failures are easy
+                // to miss as a small toast pill, so also surface them as a
+                // blocking browser alert the uploader can't overlook.
+                if (type === 'warning' || type === 'error') {
+                    window.alert(msg.replace(/^[⚠️❌]\s*/u, ''));
+                }
+            }
+
+            function bindEvents() {
+                const map = {
+                    filterAccred: 'accred',
+                    filterCountry: 'country',
+                    filterCourse: 'course',
+                    filterSource: 'source',
+                    filterRegion: 'region'
+                };
+                Object.keys(map).forEach(id => {
+                    getEl(id).addEventListener('change', function() {
+                        currentFilters[map[id]] = this.value;
+                        render();
+                    });
+                });
+
+                const r1ResetBtn = getEl('resetFilters');
+                if (r1ResetBtn) {
+                    r1ResetBtn.addEventListener('click', function() {
+                        Object.keys(map).forEach(id => {
+                            getEl(id).value = 'all';
+                            currentFilters[map[id]] = 'all';
+                        });
+                        render();
+                    });
+                }
+
+                // Upload controls are stripped out of the shared/exported HTML
+                // (recipients should only see the dashboard, not the upload
+                // button). Guard against them being absent so bindEvents()
+                // never throws and blocks the rest of init() from running.
+                const r1FileInput = getEl('fileInput');
+                const r1UploadBtn = getEl('uploadBtn');
+                if (r1FileInput) {
+                    r1FileInput.addEventListener('change', function(e) {
+                        if (this.files && this.files.length > 0) {
+                            loadExcelData(this.files[0]);
+                        }
+                        this.value = '';
+                    });
+                }
+                if (r1UploadBtn && r1FileInput) {
+                    r1UploadBtn.addEventListener('click', function() {
+                        r1FileInput.click();
+                    });
+                }
+            }
+
+            // Expose getData/setData BEFORE init() runs, so that even if
+            // init() throws for any reason, the exported file's embedded-data
+            // loader can still find and call setData.
+            window.r1_getData = function() { return currentData; };
+            window.r1_setData = function(data) {
+                currentData = data;
+                Object.keys(currentFilters).forEach(k => currentFilters[k] = 'all');
+                document.querySelectorAll('#report1 .filter-item select').forEach(sel => sel.value = 'all');
+                render();
+            };
+
+            function init() {
+                populateFilterOptions();
+                bindEvents();
+                render();
+            }
+
+            init();
+
+        })();
+    </script>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- REPORT 2 JAVASCRIPT                        -->
+    <!-- ════════════════════════════════════════════ -->
+    <script>
+        (function() {
+            'use strict';
+
+            let currentData = [];
+            let currentFilters = { cam: 'all', country: 'all', course: 'all', source: 'all', region: 'all', accred: 'all' };
+            const chartInstances = {};
+            const PREFIX = 'r2_';
+
+            function getEl(id) { return document.getElementById(PREFIX + id); }
+
+            function getUniqueValues(arr, key) {
+                const set = new Set(arr.map(d => d[key]).filter(v => v !== undefined && v !== ''));
+                return [...set].sort();
+            }
+
+            function filterData(data, filters) {
+                return data.filter(d => {
+                    if (filters.cam !== 'all' && d.cam !== filters.cam) return false;
+                    if (filters.country !== 'all' && d.country !== filters.country) return false;
+                    if (filters.course !== 'all' && d.course !== filters.course) return false;
+                    if (filters.source !== 'all' && d.source !== filters.source) return false;
+                    if (filters.region !== 'all' && d.region !== filters.region) return false;
+                    if (filters.accred !== 'all' && d.accred !== filters.accred) return false;
+                    return true;
+                });
+            }
+
+            function buildCountMap(arr, key) {
+                const map = new Map();
+                arr.forEach(d => {
+                    const val = d[key];
+                    map.set(val, (map.get(val) || 0) + 1);
+                });
+                return map;
+            }
+
+            function render() {
+                const filtered = filterData(currentData, currentFilters);
+                updateKPIs(filtered);
+                updateCharts(filtered);
+                updateBadge(filtered.length);
+                populateFilterOptions();
+                window.r2_hasData = currentData.length > 0;
+                if (typeof window.updateReportDots === 'function') window.updateReportDots();
+            }
+
+            function updateBadge(count) {
+                getEl('badge').innerHTML = `<i class="fas fa-database"></i> ${count} records`;
+            }
+
+            function updateKPIs(data) {
+                getEl('kpiTotal').textContent = data.length;
+                getEl('kpiTotalChange').textContent = '● ' + data.length + ' records';
+
+                const countries = new Set(data.map(d => d.country));
+                getEl('kpiCountries').textContent = countries.size;
+                getEl('kpiCountriesChange').textContent = '● ' + countries.size + ' unique';
+
+                const courses = new Set(data.map(d => d.course));
+                getEl('kpiCourses').textContent = courses.size;
+                getEl('kpiCoursesChange').textContent = '● ' + courses.size + ' distinct';
+
+                const accs = new Set(data.map(d => d.accred));
+                getEl('kpiAccred').textContent = accs.size;
+                getEl('kpiAccredChange').textContent = '● ' + accs.size + ' unique';
+
+                const cams = new Set(data.map(d => d.cam));
+                getEl('kpiCamMembers').textContent = cams.size;
+                getEl('kpiCamMembersChange').textContent = '● ' + cams.size + ' members';
+
+                const sources = new Set(data.map(d => d.source));
+                getEl('kpiSources').textContent = sources.size;
+                getEl('kpiSourcesChange').textContent = '● ' + sources.size + ' distinct';
+            }
+
+            function updateCharts(data) {
+                function renderChart(id, labels, values, label, colorPalette = null, type = 'bar', options = {}) {
+                    const ctx = document.getElementById(PREFIX + id).getContext('2d');
+                    if (chartInstances[id]) chartInstances[id].destroy();
+                    if (!labels.length) {
+                        chartInstances[id] = new Chart(ctx, {
+                            type: 'bar',
+                            data: { labels: ['No data'],
+                                datasets: [{ label: label, data: [0], backgroundColor: '#dce4ec' }] },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                        });
+                        return;
+                    }
+                    const colors = colorPalette || ['#4f46e5', '#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+                        '#ec4899'
+                    ];
+                    const bg = labels.map((_, i) => colors[i % colors.length]);
+                    const defaultOpts = {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: '#edf2f7' } },
+                            x: { grid: { display: false } }
+                        }
+                    };
+                    const mergedOpts = { ...defaultOpts, ...options };
+                    chartInstances[id] = new Chart(ctx, {
+                        type: type,
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: label,
+                                data: values,
+                                backgroundColor: bg,
+                                borderColor: bg.map(c => c),
+                                borderWidth: 1,
+                                borderRadius: 4,
+                            }]
+                        },
+                        options: mergedOpts
+                    });
+                }
+
+                // Country (Donut)
+                const countryMap = buildCountMap(data, 'country');
+                const countryLabels = [...countryMap.keys()];
+                const countryValues = countryLabels.map(k => countryMap.get(k));
+                const ctxCountry = document.getElementById(PREFIX + 'chartCountry').getContext('2d');
+                if (chartInstances['chartCountry']) chartInstances['chartCountry'].destroy();
+                if (!countryLabels.length) {
+                    chartInstances['chartCountry'] = new Chart(ctxCountry, {
+                        type: 'doughnut',
+                        data: { labels: ['No data'], datasets: [{ data: [1], backgroundColor: '#dce4ec' }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } } }
+                    });
+                } else {
+                    const colors = ['#4f46e5', '#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
+                    chartInstances['chartCountry'] = new Chart(ctxCountry, {
+                        type: 'doughnut',
+                        data: {
+                            labels: countryLabels,
+                            datasets: [{
+                                data: countryValues,
+                                backgroundColor: countryLabels.map((_, i) => colors[i % colors.length]),
+                                borderColor: '#fff',
+                                borderWidth: 2,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                                tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + ' records' } }
+                            },
+                            cutout: '62%',
+                        }
+                    });
+                }
+
+                const courseMap = buildCountMap(data, 'course');
+                let courseLabels = [...courseMap.keys()];
+                let courseValues = courseLabels.map(k => courseMap.get(k));
+                const sorted = courseLabels.map((k, i) => ({ label: k, value: courseValues[i] })).sort((a, b) => b.value - a
+                .value);
+                courseLabels = sorted.slice(0, 8).map(d => d.label);
+                courseValues = sorted.slice(0, 8).map(d => d.value);
+                renderChart('chartCourse', courseLabels, courseValues, 'Courses', null, 'bar');
+
+                const accredMap = buildCountMap(data, 'accred');
+                const accredLabels = [...accredMap.keys()];
+                const accredValues = accredLabels.map(k => accredMap.get(k));
+                renderChart('chartAccred', accredLabels, accredValues, 'Accred.', null, 'bar');
+
+                const camMap = buildCountMap(data, 'cam');
+                const camLabels = [...camMap.keys()];
+                const camValues = camLabels.map(k => camMap.get(k));
+                renderChart('chartCam', camLabels, camValues, 'CAM', null, 'bar');
+
+                const sourceMap = buildCountMap(data, 'source');
+                const sourceLabels = [...sourceMap.keys()];
+                const sourceValues = sourceLabels.map(k => sourceMap.get(k));
+                renderChart('chartSource', sourceLabels, sourceValues, 'Source', null, 'bar');
+
+                const regionMap = buildCountMap(data, 'region');
+                const regionLabels = [...regionMap.keys()];
+                const regionValues = regionLabels.map(k => regionMap.get(k));
+                renderChart('chartRegion', regionLabels, regionValues, 'Region', null, 'bar');
+
+                // Combo: Course · Accreditation
+                const comboContainer = document.getElementById(PREFIX + 'chartCombo');
+                const comboLabels = [...new Set(data.map(d => d.course))];
+                const accredSet = [...new Set(data.map(d => d.accred))];
+                const datasets = accredSet.map(acc => {
+                    const vals = comboLabels.map(course => {
+                        return data.filter(d => d.course === course && d.accred === acc).length;
+                    });
+                    return {
+                        label: acc,
+                        data: vals,
+                        backgroundColor: ['#4f46e5', '#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'][accredSet
+                            .indexOf(acc) % 6]
+                    };
+                });
+                if (chartInstances['chartCombo']) chartInstances['chartCombo'].destroy();
+                const ctxCombo = comboContainer.getContext('2d');
+                if (comboLabels.length === 0) {
+                    chartInstances['chartCombo'] = new Chart(ctxCombo, {
+                        type: 'bar',
+                        data: { labels: ['No data'], datasets: [{ label: 'none', data: [0], backgroundColor: '#dce4ec' }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                    });
+                } else {
+                    chartInstances['chartCombo'] = new Chart(ctxCombo, {
+                        type: 'bar',
+                        data: { labels: comboLabels, datasets: datasets },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: true, position: 'top', labels: { boxWidth: 12, fontSize: 10 } }
+                            },
+                            scales: {
+                                x: { stacked: false, grid: { display: false } },
+                                y: { beginAtZero: true, grid: { color: '#edf2f7' } }
+                            }
+                        }
+                    });
+                }
+
+                // CAM by Country
+                const camSet = [...new Set(data.map(d => d.cam))];
+                const countrySet = [...new Set(data.map(d => d.country))];
+                const camCountryLabels = countrySet;
+                const camCountryDatasets = camSet.map(cam => {
+                    return {
+                        label: cam,
+                        data: countrySet.map(c => {
+                            return data.filter(d => d.cam === cam && d.country === c).length;
+                        }),
+                        backgroundColor: ['#4f46e5', '#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'][camSet
+                            .indexOf(cam) % 6]
+                    };
+                });
+                if (chartInstances['chartCamCountry']) chartInstances['chartCamCountry'].destroy();
+                const ctxCamCountry = document.getElementById(PREFIX + 'chartCamCountry').getContext('2d');
+                if (camCountryLabels.length === 0) {
+                    chartInstances['chartCamCountry'] = new Chart(ctxCamCountry, {
+                        type: 'bar',
+                        data: { labels: ['No data'], datasets: [{ label: 'none', data: [0], backgroundColor: '#dce4ec' }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                    });
+                } else {
+                    chartInstances['chartCamCountry'] = new Chart(ctxCamCountry, {
+                        type: 'bar',
+                        data: { labels: camCountryLabels, datasets: camCountryDatasets },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: true, position: 'top', labels: { boxWidth: 12, fontSize: 10 } }
+                            },
+                            scales: {
+                                x: { stacked: false, grid: { display: false } },
+                                y: { beginAtZero: true, grid: { color: '#edf2f7' } }
+                            }
+                        }
+                    });
+                }
+            }
+
+            function populateFilterOptions() {
+                const fields = ['cam', 'country', 'course', 'source', 'region', 'accred'];
+                const selectIds = ['filterCam', 'filterCountry', 'filterCourse', 'filterSource', 'filterRegion',
+                    'filterAccred'
+                ];
+                fields.forEach((f, idx) => {
+                    const values = getUniqueValues(currentData, f);
+                    const sel = getEl(selectIds[idx]);
+                    const currentVal = sel.value;
+                    sel.innerHTML = '';
+                    const allOpt = document.createElement('option');
+                    allOpt.value = 'all';
+                    allOpt.innerText = 'All';
+                    sel.appendChild(allOpt);
+                    values.forEach(v => {
+                        const opt = document.createElement('option');
+                        opt.value = v;
+                        opt.innerText = v;
+                        sel.appendChild(opt);
+                    });
+                    if ([...sel.options].some(o => o.value === currentVal)) {
+                        sel.value = currentVal;
+                    } else {
+                        sel.value = 'all';
+                        currentFilters[f] = 'all';
+                    }
+                });
+            }
+
+            function loadExcelData(file) {
+                if (!/\.(xlsx|xls)$/i.test(file.name)) {
+                    showToast('⚠️ Wrong file format. Please upload a .xlsx or .xls Excel file', 'warning');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const json = XLSX.utils.sheet_to_json(firstSheet);
+                        if (!json || json.length === 0) {
+                            showToast('⚠️ No data found', 'warning');
+                            return;
+                        }
+                        const mapped = json.map(row => {
+                            return {
+                                cam: row['CAM Team'] || row['CAMTeam'] || row['cam'] || '',
+                                country: row['Country'] || row['country'] || '',
+                                source: row['Source'] || row['source'] || '',
+                                course: row['Course'] || row['course'] || '',
+                                region: row['Region'] || row['region'] || '',
+                                accred: row['Accrediation'] || row['Accreditation'] || row['accred'] || ''
+                            };
+                        }).filter(d => d.cam && d.country);
+                        if (mapped.length === 0) {
+                            showToast('⚠️ Could not parse columns. Expected: CAM Team, Country, Source, Course, Region, Accrediation',
+                                'warning');
+                            return;
+                        }
+                        currentData = mapped;
+                        Object.keys(currentFilters).forEach(k => currentFilters[k] = 'all');
+                        document.querySelectorAll('#report2 .filter-item select').forEach(sel => sel.value = 'all');
+                        render();
+                        showToast(`✅ Loaded ${mapped.length} records`, 'success');
+                    } catch (err) {
+                        showToast('❌ Error: ' + err.message, 'error');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+
+            function showToast(msg, type = 'success') {
+                const el = getEl('toast');
+                el.innerText = msg;
+                el.style.background = type === 'success' ? '#1e3349' : type === 'warning' ? '#b85c00' : '#b12a2a';
+                el.classList.add('show');
+                clearTimeout(el._hide);
+                el._hide = setTimeout(() => el.classList.remove('show'), 2800);
+                // Wrong file format / missing columns / parse failures are easy
+                // to miss as a small toast pill, so also surface them as a
+                // blocking browser alert the uploader can't overlook.
+                if (type === 'warning' || type === 'error') {
+                    window.alert(msg.replace(/^[⚠️❌]\s*/u, ''));
+                }
+            }
+
+            function bindEvents() {
+                const map = {
+                    filterCam: 'cam',
+                    filterCountry: 'country',
+                    filterCourse: 'course',
+                    filterSource: 'source',
+                    filterRegion: 'region',
+                    filterAccred: 'accred'
+                };
+                Object.keys(map).forEach(id => {
+                    getEl(id).addEventListener('change', function() {
+                        currentFilters[map[id]] = this.value;
+                        render();
+                    });
+                });
+
+                const r2ResetBtn = getEl('resetFilters');
+                if (r2ResetBtn) {
+                    r2ResetBtn.addEventListener('click', function() {
+                        Object.keys(map).forEach(id => {
+                            getEl(id).value = 'all';
+                            currentFilters[map[id]] = 'all';
+                        });
+                        render();
+                    });
+                }
+
+                // Upload controls are stripped out of the shared/exported HTML
+                // (recipients should only see the dashboard, not the upload
+                // button). Guard against them being absent so bindEvents()
+                // never throws and blocks the rest of init() from running.
+                const r2FileInput = getEl('fileInput');
+                const r2UploadBtn = getEl('uploadBtn');
+                if (r2FileInput) {
+                    r2FileInput.addEventListener('change', function(e) {
+                        if (this.files && this.files.length > 0) {
+                            loadExcelData(this.files[0]);
+                        }
+                        this.value = '';
+                    });
+                }
+                if (r2UploadBtn && r2FileInput) {
+                    r2UploadBtn.addEventListener('click', function() {
+                        r2FileInput.click();
+                    });
+                }
+            }
+
+            // Expose getData/setData BEFORE init() runs, so that even if
+            // init() throws for any reason, the exported file's embedded-data
+            // loader can still find and call setData.
+            window.r2_getData = function() { return currentData; };
+            window.r2_setData = function(data) {
+                currentData = data;
+                Object.keys(currentFilters).forEach(k => currentFilters[k] = 'all');
+                document.querySelectorAll('#report2 .filter-item select').forEach(sel => sel.value = 'all');
+                render();
+            };
+
+            function init() {
+                populateFilterOptions();
+                bindEvents();
+                render();
+            }
+
+            init();
+
+        })();
+    </script>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- REPORT 3 JAVASCRIPT                        -->
+    <!-- ════════════════════════════════════════════ -->
+    <script>
+        (function() {
+            'use strict';
+
+            let currentData = [];
+            let currentFilter = 'all';
+            const charts = {};
+            const PREFIX = 'r3_';
+
+            function getEl(id) { return document.getElementById(PREFIX + id); }
+
+            function fmt(n) {
+                if (n === undefined || n === null || isNaN(n)) return '—';
+                if (Number.isInteger(n)) return n.toLocaleString();
+                return n.toFixed(2);
+            }
+
+            function fmtCurrency(n) {
+                if (n === undefined || n === null || isNaN(n)) return '—';
+                return '₹' + fmt(n);
+            }
+
+            function fmtPercent(n) {
+                if (n === undefined || n === null || isNaN(n)) return '—';
+                return n.toFixed(1) + '%';
+            }
+
+            function cleanCurrency(str) {
+                if (typeof str === 'string') {
+                    return parseFloat(str.replace(/[₹,INR\s]/g, '')) || 0;
+                }
+                return Number(str) || 0;
+            }
+
+            function enrich(row) {
+                const revPerLead = row.leadCount > 0 ? row.revenue / row.leadCount : 0;
+                const roi = row.spent > 0 ? (row.revenue / row.spent) * 100 : 0;
+                const convRate = row.leadCount > 0 ? (row.payments / row.leadCount) * 100 : 0;
+                return { ...row, revPerLead, roi, convRate };
+            }
+
+            function getFilteredData(filter) {
+                if (filter === 'all') return currentData;
+                return currentData.filter(d => d.source === filter);
+            }
+
+            const COLORS = {
+                EM: '#4f46e5',
+                'EM-LK': '#7c3aed',
+                Whatsapp: '#06b6d4',
+                Inboundcall: '#10b981'
+            };
+            const COLOR_ALPHA = {
+                EM: 'rgba(79,70,229,0.65)',
+                'EM-LK': 'rgba(124,58,237,0.65)',
+                Whatsapp: 'rgba(6,182,212,0.65)',
+                Inboundcall: 'rgba(16,185,129,0.65)'
+            };
+            const COLOR_BG = {
+                EM: 'rgba(79,70,229,0.18)',
+                'EM-LK': 'rgba(124,58,237,0.18)',
+                Whatsapp: 'rgba(6,182,212,0.18)',
+                Inboundcall: 'rgba(16,185,129,0.18)'
+            };
+
+            function getColor(src, alpha) {
+                return alpha ? COLOR_ALPHA[src] || '#6b7280' : COLORS[src] || '#6b7280';
+            }
+
+            function getColors(srcs, alpha) {
+                return srcs.map(s => getColor(s, alpha));
+            }
+
+            function destroyAllCharts() {
+                Object.keys(charts).forEach(key => {
+                    if (charts[key]) {
+                        charts[key].destroy();
+                        delete charts[key];
+                    }
+                });
+            }
+
+            function clearKPIs() {
+                getEl('kpiLeads').textContent = '—';
+                getEl('kpiSpent').textContent = '—';
+                getEl('kpiRevenue').textContent = '—';
+                getEl('kpiAvgCost').textContent = '—';
+                getEl('kpiPayments').textContent = '—';
+                getEl('kpiROI').textContent = '—';
+                getEl('kpiLeadsChange').textContent = '● —';
+                getEl('kpiSpentChange').textContent = '● —';
+                getEl('kpiRevenueChange').textContent = '● —';
+                getEl('kpiAvgCostChange').textContent = '● —';
+                getEl('kpiPaymentsChange').textContent = '● —';
+                getEl('kpiROIChange').textContent = '● —';
+            }
+
+            function buildCharts(filtered) {
+                destroyAllCharts();
+
+                if (filtered.length === 0) return;
+
+                const srcs = filtered.map(d => d.source);
+                const leads = filtered.map(d => d.leadCount);
+                const revenues = filtered.map(d => d.revenue);
+                const spent = filtered.map(d => d.spent);
+                const costs = filtered.map(d => d.leadCost);
+                const payments = filtered.map(d => d.payments);
+                const revPerLead = filtered.map(d => d.revPerLead);
+                const roi = filtered.map(d => d.roi);
+                const convRate = filtered.map(d => d.convRate);
+
+                const colors = getColors(srcs, false);
+                const colorsAlpha = getColors(srcs, true);
+                const colorsBg = srcs.map(s => COLOR_BG[s] || 'rgba(107,114,128,0.18)');
+
+                // 1. Lead Distribution
+                charts.leadDist = new Chart(document.getElementById(PREFIX + 'chartLeadDist'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: srcs,
+                        datasets: [{
+                            data: leads,
+                            backgroundColor: colors,
+                            borderColor: '#fff',
+                            borderWidth: 2,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                            tooltip: { callbacks: { label: ctx => ctx.label + ': ' + fmt(ctx.parsed) + ' leads' } }
+                        },
+                        cutout: '62%',
+                    }
+                });
+
+                // 2. Revenue
+                charts.revenue = new Chart(document.getElementById(PREFIX + 'chartRevenue'), {
+                    type: 'bar',
+                    data: {
+                        labels: srcs,
+                        datasets: [{
+                            label: 'Revenue (INR)',
+                            data: revenues,
+                            backgroundColor: colorsAlpha,
+                            borderColor: colors,
+                            borderWidth: 1.5,
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => '₹' + fmt(ctx.parsed.y) } }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { callback: v => '₹' + fmt(v) } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+
+                // 3. Spent
+                charts.spent = new Chart(document.getElementById(PREFIX + 'chartSpent'), {
+                    type: 'bar',
+                    data: {
+                        labels: srcs,
+                        datasets: [{
+                            label: 'Spent (INR)',
+                            data: spent,
+                            backgroundColor: colorsBg,
+                            borderColor: colors,
+                            borderWidth: 1.5,
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => '₹' + fmt(ctx.parsed.y) } }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { callback: v => '₹' + fmt(v) } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+
+                // 4. Lead Cost
+                charts.leadCost = new Chart(document.getElementById(PREFIX + 'chartLeadCost'), {
+                    type: 'bar',
+                    data: {
+                        labels: srcs,
+                        datasets: [{
+                            label: 'Cost per Lead (INR)',
+                            data: costs,
+                            backgroundColor: colorsAlpha.map(c => c.replace('0.65', '0.50')),
+                            borderColor: colors,
+                            borderWidth: 1.5,
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => '₹' + fmt(ctx.parsed.y) } }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { callback: v => '₹' + fmt(v) } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+
+                // 5. Revenue vs Spent
+                charts.revVsSpent = new Chart(document.getElementById(PREFIX + 'chartRevVsSpent'), {
+                    type: 'bar',
+                    data: {
+                        labels: srcs,
+                        datasets: [{
+                            label: 'Revenue',
+                            data: revenues,
+                            backgroundColor: 'rgba(79,70,229,0.7)',
+                            borderColor: '#4f46e5',
+                            borderWidth: 1.5,
+                            borderRadius: 4,
+                        }, {
+                            label: 'Spent',
+                            data: spent,
+                            backgroundColor: 'rgba(239,68,68,0.6)',
+                            borderColor: '#ef4444',
+                            borderWidth: 1.5,
+                            borderRadius: 4,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+                            tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ₹' + fmt(ctx.parsed.y) } }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { callback: v => '₹' + fmt(v) } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+
+                // 6. ROI
+                charts.roi = new Chart(document.getElementById(PREFIX + 'chartROI'), {
+                    type: 'bar',
+                    data: {
+                        labels: srcs,
+                        datasets: [{
+                            label: 'ROI (%)',
+                            data: roi,
+                            backgroundColor: roi.map(v => v > 10 ? 'rgba(16,185,129,0.7)' : v > 5 ?
+                                'rgba(245,158,11,0.7)' : 'rgba(239,68,68,0.6)'),
+                            borderColor: roi.map(v => v > 10 ? '#10b981' : v > 5 ? '#f59e0b' : '#ef4444'),
+                            borderWidth: 1.5,
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => fmt(ctx.parsed.y) + '%' } }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { callback: v => v + '%' } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+
+                // 7. Revenue per Lead
+                charts.revPerLead = new Chart(document.getElementById(PREFIX + 'chartRevPerLead'), {
+                    type: 'bar',
+                    data: {
+                        labels: srcs,
+                        datasets: [{
+                            label: 'Revenue per Lead (INR)',
+                            data: revPerLead,
+                            backgroundColor: colorsAlpha,
+                            borderColor: colors,
+                            borderWidth: 1.5,
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => '₹' + fmt(ctx.parsed.y) } }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { callback: v => '₹' + fmt(v) } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+
+                // 8. Conversion Rate
+                charts.convRate = new Chart(document.getElementById(PREFIX + 'chartConvRate'), {
+                    type: 'bar',
+                    data: {
+                        labels: srcs,
+                        datasets: [{
+                            label: 'Conversion Rate (%)',
+                            data: convRate,
+                            backgroundColor: convRate.map(v => v > 40 ? 'rgba(16,185,129,0.7)' : v > 20 ?
+                                'rgba(245,158,11,0.7)' : 'rgba(239,68,68,0.6)'),
+                            borderColor: convRate.map(v => v > 40 ? '#10b981' : v > 20 ? '#f59e0b' : '#ef4444'),
+                            borderWidth: 1.5,
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => fmt(ctx.parsed.y) + '%' } }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { callback: v => v + '%' } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+
+                // 9. Payments
+                charts.payments = new Chart(document.getElementById(PREFIX + 'chartPayments'), {
+                    type: 'bar',
+                    data: {
+                        labels: srcs,
+                        datasets: [{
+                            label: 'Total Payments',
+                            data: payments,
+                            backgroundColor: colorsBg,
+                            borderColor: colors,
+                            borderWidth: 1.5,
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => fmt(ctx.parsed.y) + ' payments' } }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+
+            function updateKPIs(filtered) {
+                if (filtered.length === 0) {
+                    clearKPIs();
+                    return;
+                }
+
+                const totalLeads = filtered.reduce((s, d) => s + d.leadCount, 0);
+                const totalSpent = filtered.reduce((s, d) => s + d.spent, 0);
+                const totalRevenue = filtered.reduce((s, d) => s + d.revenue, 0);
+                const totalPayments = filtered.reduce((s, d) => s + d.payments, 0);
+                const avgCost = filtered.reduce((s, d) => s + d.leadCost, 0) / filtered.length;
+                const overallROI = totalSpent > 0 ? (totalRevenue / totalSpent) * 100 : 0;
+
+                getEl('kpiLeads').textContent = fmt(totalLeads);
+                getEl('kpiSpent').textContent = fmtCurrency(totalSpent);
+                getEl('kpiRevenue').textContent = fmtCurrency(totalRevenue);
+                getEl('kpiAvgCost').textContent = fmtCurrency(avgCost);
+                getEl('kpiPayments').textContent = fmt(totalPayments);
+                getEl('kpiROI').textContent = fmtPercent(overallROI);
+
+                getEl('kpiLeadsChange').textContent = '● ' + (filtered.length === 1 ? filtered[0].source : 'all sources');
+                getEl('kpiSpentChange').textContent = '● ' + fmtCurrency(totalSpent);
+                getEl('kpiRevenueChange').textContent = '● ' + fmtCurrency(totalRevenue);
+                getEl('kpiAvgCostChange').textContent = '● per lead';
+                getEl('kpiPaymentsChange').textContent = '● ' + fmt(totalPayments) + ' conversions';
+                getEl('kpiROIChange').textContent = '● ' + (overallROI > 5 ? 'healthy' : 'needs attention');
+            }
+
+            function updateDashboard(filter) {
+                const filtered = getFilteredData(filter);
+                updateKPIs(filtered);
+                buildCharts(filtered);
+                getEl('badge').innerHTML = `<i class="fas fa-database"></i> ${filtered.length} records`;
+                window.r3_hasData = currentData.length > 0;
+                if (typeof window.updateReportDots === 'function') window.updateReportDots();
+            }
+
+            function populateFilterOptions(data) {
+                const select = getEl('filterSource');
+                select.innerHTML = '<option value="all">All Sources</option>';
+                const sources = [...new Set(data.map(d => d.source))];
+                sources.forEach(src => {
+                    const opt = document.createElement('option');
+                    opt.value = src;
+                    opt.textContent = src;
+                    select.appendChild(opt);
+                });
+                select.value = currentFilter;
+            }
+
+            function parseFile(workbook) {
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                let headerRow = 0;
+                for (let i = 0; i < Math.min(5, json.length); i++) {
+                    const row = json[i];
+                    if (!row || row.length < 2) continue;
+                    const firstCol = String(row[0] || '').toLowerCase();
+                    if (firstCol.includes('lead') || firstCol.includes('source')) {
+                        headerRow = i;
+                        break;
+                    }
+                }
+                const headers = json[headerRow].map(h => String(h || '').toLowerCase().trim());
+                const idxSource = headers.findIndex(h => h.includes('source'));
+                const idxLeadCount = headers.findIndex(h => h.includes('lead count') || h.includes('count'));
+                const idxLeadCost = headers.findIndex(h => h.includes('lead cost') || h.includes('cost'));
+                const idxSpent = headers.findIndex(h => h.includes('spent'));
+                const idxPayments = headers.findIndex(h => h.includes('payment') || h.includes('total payment'));
+                const idxRevenue = headers.findIndex(h => h.includes('revenue') || h.includes('june received'));
+
+                if (idxSource === -1 || idxLeadCount === -1 || idxSpent === -1) {
+                    showToast('⚠️ Could not find required columns (Source, Lead Count, Spent)', 'warning');
+                    return false;
+                }
+
+                const data = [];
+                for (let i = headerRow + 1; i < json.length; i++) {
+                    const row = json[i];
+                    if (!row || row.length < 2) continue;
+                    const source = String(row[idxSource] || '').trim();
+                    if (!source) continue;
+                    const leadCount = Number(row[idxLeadCount]) || 0;
+                    const leadCost = idxLeadCost !== -1 ? Number(row[idxLeadCost]) || 0 : 0;
+                    const spent = Number(row[idxSpent]) || 0;
+                    const payments = idxPayments !== -1 ? Number(row[idxPayments]) || 0 : 0;
+                    let revenue = 0;
+                    if (idxRevenue !== -1) {
+                        revenue = cleanCurrency(row[idxRevenue]);
+                    }
+                    data.push({ source, leadCount, leadCost, spent, payments, revenue });
+                }
+
+                if (data.length === 0) {
+                    showToast('⚠️ No data rows found', 'warning');
+                    return false;
+                }
+
+                currentData = data.map(enrich);
+                currentFilter = 'all';
+                populateFilterOptions(currentData);
+                getEl('filterSource').value = 'all';
+                updateDashboard('all');
+                showToast(`✅ Loaded ${data.length} sources`, 'success');
+                return true;
+            }
+
+            function showToast(msg, type = 'success') {
+                const el = getEl('toast');
+                el.innerText = msg;
+                el.style.background = type === 'success' ? '#1e3349' : type === 'warning' ? '#b85c00' : '#b12a2a';
+                el.classList.add('show');
+                clearTimeout(el._hide);
+                el._hide = setTimeout(() => el.classList.remove('show'), 2800);
+                // Wrong file format / missing columns / parse failures are easy
+                // to miss as a small toast pill, so also surface them as a
+                // blocking browser alert the uploader can't overlook.
+                if (type === 'warning' || type === 'error') {
+                    window.alert(msg.replace(/^[⚠️❌]\s*/u, ''));
+                }
+            }
+
+            function bindEvents() {
+                getEl('filterSource').addEventListener('change', function() {
+                    currentFilter = this.value;
+                    updateDashboard(currentFilter);
+                });
+
+                const r3ResetBtn = getEl('resetFilters');
+                if (r3ResetBtn) {
+                    r3ResetBtn.addEventListener('click', function() {
+                        getEl('filterSource').value = 'all';
+                        currentFilter = 'all';
+                        updateDashboard('all');
+                    });
+                }
+
+                // Upload controls are stripped out of the shared/exported HTML
+                // (recipients should only see the dashboard, not the upload
+                // button). Guard against them being absent so bindEvents()
+                // never throws and blocks the rest of init() from running.
+                const r3FileInput = getEl('fileInput');
+                const r3UploadBtn = getEl('uploadBtn');
+                if (r3FileInput) {
+                    r3FileInput.addEventListener('change', function(e) {
+                        if (this.files && this.files.length > 0) {
+                            if (!/\.(xlsx|xls)$/i.test(this.files[0].name)) {
+                                showToast('⚠️ Wrong file format. Please upload a .xlsx or .xls Excel file', 'warning');
+                                this.value = '';
+                                return;
+                            }
+                            const reader = new FileReader();
+                            reader.onload = function(loadEvent) {
+                                try {
+                                    const data = new Uint8Array(loadEvent.target.result);
+                                    const workbook = XLSX.read(data, { type: 'array' });
+                                    const success = parseFile(workbook);
+                                    if (!success && r3UploadBtn) {
+                                        r3UploadBtn.textContent = '❌ Parse error';
+                                    }
+                                } catch (err) {
+                                    console.error(err);
+                                    showToast('❌ Error reading file', 'error');
+                                }
+                            };
+                            reader.readAsArrayBuffer(this.files[0]);
+                            this.value = '';
+                        }
+                    });
+                }
+
+                if (r3UploadBtn && r3FileInput) {
+                    r3UploadBtn.addEventListener('click', function() {
+                        r3FileInput.click();
+                    });
+                }
+            }
+
+            // Expose getData/setData BEFORE init() runs, so that even if
+            // init() throws for any reason, the exported file's embedded-data
+            // loader can still find and call setData.
+            window.r3_getData = function() { return currentData; };
+            window.r3_setData = function(data) {
+                currentData = data;
+                currentFilter = 'all';
+                populateFilterOptions(currentData);
+                getEl('filterSource').value = 'all';
+                updateDashboard('all');
+            };
+
+            function init() {
+                populateFilterOptions([]);
+                clearKPIs();
+                destroyAllCharts();
+                getEl('badge').innerHTML = `<i class="fas fa-database"></i> 0 records`;
+                bindEvents();
+            }
+
+            init();
+
+        })();
+    </script>
+
+</body>
+</html>
