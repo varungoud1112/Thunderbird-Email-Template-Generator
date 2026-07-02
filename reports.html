@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Three Reports Dashboard</title>
+    <title>Reports Dashboard</title>
 
     <!-- ─── Shared Libraries ─── -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js">
@@ -70,6 +70,16 @@
             font-weight: 300;
             color: #6b7280;
         }
+        .page-nav .brand-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 9px;
+            background: linear-gradient(135deg, #eef2ff, #fef3c7 50%, #d1fae5);
+            flex-shrink: 0;
+        }
         .page-nav .nav-items {
             display: flex;
             gap: 8px;
@@ -98,31 +108,32 @@
             width: 28px;
             height: 28px;
             border-radius: 50%;
-            background: #edf2f7;
-            color: #4b5563;
             font-weight: 700;
             font-size: 13px;
             transition: all 0.2s;
             flex-shrink: 0;
+            box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--nc) 45%, transparent);
+            color: var(--nc);
+            background: color-mix(in srgb, var(--nc) 10%, #fff);
         }
         .page-nav .nav-item .label {
             font-size: 13px;
             font-weight: 500;
         }
         .page-nav .nav-item:hover {
-            background: #f3f4f6;
+            background: color-mix(in srgb, var(--nc, #6b7280) 8%, #f9fafb);
         }
         .page-nav .nav-item:hover .num {
-            background: #d1d5db;
+            background: color-mix(in srgb, var(--nc, #6b7280) 25%, #fff);
         }
         .page-nav .nav-item.active {
-            background: #eef2ff;
-            color: #4f46e5;
+            background: color-mix(in srgb, var(--nc, #4f46e5) 12%, #fff);
+            color: var(--nc, #4f46e5);
         }
         .page-nav .nav-item.active .num {
-            background: #4f46e5;
+            background: var(--nc, #4f46e5);
             color: #fff;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+            box-shadow: 0 4px 12px color-mix(in srgb, var(--nc, #4f46e5) 45%, transparent);
         }
         .page-nav .nav-item .dot {
             width: 6px;
@@ -164,7 +175,8 @@
             }
         }
 
-        /* ─── Report Pages ─── */
+        /* ─── 
+         Pages ─── */
         .report-page {
             display: none;
             animation: fadeUp 0.4s ease forwards;
@@ -199,7 +211,8 @@
             opacity: 1;
         }
 
-        /* ─── Report containers ───
+        /* ─── 
+         containers ───
            Previously this had max-height: calc(100vh - 180px) + overflow-y: auto,
            which created a cramped inner scroll box that didn't account for the
            actual height of the header/filters/KPIs above it. That's what was
@@ -605,21 +618,30 @@
 
         <!-- ═══════════════ NAVIGATION ═══════════════ -->
         <nav class="page-nav" id="mainNav">
-            <div class="brand">📊 <span>Reports</span></div>
+            <div class="brand">
+                <span class="brand-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="3" y="12" width="4" height="9" rx="1" fill="#4f46e5"/>
+                        <rect x="10" y="6" width="4" height="15" rx="1" fill="#f59e0b"/>
+                        <rect x="17" y="3" width="4" height="18" rx="1" fill="#10b981"/>
+                    </svg>
+                </span>
+                <span>Reports</span>
+            </div>
             <div class="nav-items">
-                <button class="nav-item active" data-page="1">
+                <button class="nav-item active" data-page="1" style="--nc:#4f46e5;">
                     <span class="num">1</span>
-                    <span class="label">Executive</span>
+                    <span class="label">Lead Report</span>
                     <span class="dot" id="dot1"></span>
                 </button>
-                <button class="nav-item" data-page="2">
+                <button class="nav-item" data-page="2" style="--nc:#f59e0b;">
                     <span class="num">2</span>
-                    <span class="label">CAM</span>
+                    <span class="label">CAM Report</span>
                     <span class="dot" id="dot2"></span>
                 </button>
-                <button class="nav-item" data-page="3">
+                <button class="nav-item" data-page="3" style="--nc:#10b981;">
                     <span class="num">3</span>
-                    <span class="label">Lead</span>
+                    <span class="label">Revenue Report</span>
                     <span class="dot" id="dot3"></span>
                 </button>
             </div>
@@ -634,8 +656,7 @@
                     <div class="left">
                         <div class="icon">📊</div>
                         <div>
-                            <h1>Report 1 <span>Executive</span></h1>
-                            <div class="sub">Certification &amp; Training Analytics</div>
+                            <h1>Lead Report</h1>
                         </div>
                     </div>
                     <div class="right">
@@ -663,7 +684,7 @@
 
                 <!-- ─── KPIs ─── -->
                 <section class="kpi-grid">
-                    <div class="kpi-card"><div class="accent-line" style="background:#4f46e5;"></div><div class="label">Total Pax</div><div class="value" id="r1_kpiTotal">0</div><div class="change" id="r1_kpiTotalChange">● registrations</div><div class="icon-bg">📋</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#4f46e5;"></div><div class="label">Total Leads</div><div class="value" id="r1_kpiTotal">0</div><div class="change" id="r1_kpiTotalChange">● registrations</div><div class="icon-bg">📋</div></div>
                     <div class="kpi-card"><div class="accent-line" style="background:#7c3aed;"></div><div class="label">Countries</div><div class="value" id="r1_kpiCountries">0</div><div class="change" id="r1_kpiCountriesChange">● unique</div><div class="icon-bg">🌍</div></div>
                     <div class="kpi-card"><div class="accent-line" style="background:#06b6d4;"></div><div class="label">Courses</div><div class="value" id="r1_kpiCourses">0</div><div class="change" id="r1_kpiCoursesChange">● distinct</div><div class="icon-bg">📚</div></div>
                     <div class="kpi-card"><div class="accent-line" style="background:#10b981;"></div><div class="label">Accreditations</div><div class="value" id="r1_kpiAccred">0</div><div class="change" id="r1_kpiAccredChange">● unique</div><div class="icon-bg">🏅</div></div>
@@ -678,11 +699,9 @@
                     <div class="chart-card"><div class="chart-title">Accreditation <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r1_chartAccred"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Source Breakdown <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r1_chartSource"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Region <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r1_chartRegion"></canvas></div></div>
-                    <div class="chart-card"><div class="chart-title">Course · Accred Combo <span class="badge">grouped</span></div><div class="chart-wrapper"><canvas id="r1_chartCombo"></canvas></div></div>
-                    <div class="chart-card span-full"><div class="chart-title">Region · Accred Combo <span class="badge">grouped</span></div><div class="chart-wrapper tall"><canvas id="r1_chartRegionAccred"></canvas></div></div>
                 </section>
 
-                <div class="footer-note">⚡ Upload your Excel file with columns: Accrediation, Region, Source, Country, Course, Pax</div>
+                <div class="footer-note">⚡ Upload your Excel file with columns: Accrediation, Region, Source, Country, Course, Total Leads</div>
 
             </div>
         </div>
@@ -696,8 +715,10 @@
                     <div class="left">
                         <div class="icon">📊</div>
                         <div>
-                            <h1>CAM <span>Executive</span></h1>
-                            <div class="sub">Certification &amp; Training Analytics</div>
+                            <h1>CAM Report
+                                
+                            </h1>
+                            
                         </div>
                     </div>
                     <div class="right">
@@ -726,11 +747,11 @@
 
                 <!-- ─── KPIs ─── -->
                 <section class="kpi-grid">
-                    <div class="kpi-card"><div class="accent-line" style="background:#4f46e5;"></div><div class="label">Total Records</div><div class="value" id="r2_kpiTotal">0</div><div class="change" id="r2_kpiTotalChange">● records</div><div class="icon-bg">📋</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#f59e0b;"></div><div class="label">Team Members</div><div class="value" id="r2_kpiCamMembers">0</div><div class="change" id="r2_kpiCamMembersChange">● members</div><div class="icon-bg">👥</div></div>
+                    <div class="kpi-card"><div class="accent-line" style="background:#eab308;"></div><div class="label">Team Members Activity</div><div class="value" id="r2_kpiCamActivity">0</div><div class="change" id="r2_kpiCamActivityChange">● records</div><div class="icon-bg">📊</div></div>
                     <div class="kpi-card"><div class="accent-line" style="background:#7c3aed;"></div><div class="label">Countries</div><div class="value" id="r2_kpiCountries">0</div><div class="change" id="r2_kpiCountriesChange">● unique</div><div class="icon-bg">🌍</div></div>
                     <div class="kpi-card"><div class="accent-line" style="background:#06b6d4;"></div><div class="label">Courses</div><div class="value" id="r2_kpiCourses">0</div><div class="change" id="r2_kpiCoursesChange">● distinct</div><div class="icon-bg">📚</div></div>
                     <div class="kpi-card"><div class="accent-line" style="background:#10b981;"></div><div class="label">Accreditations</div><div class="value" id="r2_kpiAccred">0</div><div class="change" id="r2_kpiAccredChange">● unique</div><div class="icon-bg">🏅</div></div>
-                    <div class="kpi-card"><div class="accent-line" style="background:#f59e0b;"></div><div class="label">CAM Team</div><div class="value" id="r2_kpiCamMembers">0</div><div class="change" id="r2_kpiCamMembersChange">● members</div><div class="icon-bg">👥</div></div>
                     <div class="kpi-card"><div class="accent-line" style="background:#ef4444;"></div><div class="label">Sources</div><div class="value" id="r2_kpiSources">0</div><div class="change" id="r2_kpiSourcesChange">● distinct</div><div class="icon-bg">🔗</div></div>
                 </section>
 
@@ -739,14 +760,14 @@
                     <div class="chart-card"><div class="chart-title">Country Distribution <span class="badge">donut</span></div><div class="chart-wrapper"><canvas id="r2_chartCountry"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Course Breakdown <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r2_chartCourse"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Accreditation <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r2_chartAccred"></canvas></div></div>
-                    <div class="chart-card"><div class="chart-title">CAM Team Activity <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r2_chartCam"></canvas></div></div>
+                    <div class="chart-card"><div class="chart-title">Team Members Activity <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r2_chartCam"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Source Breakdown <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r2_chartSource"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Region <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r2_chartRegion"></canvas></div></div>
-                    <div class="chart-card span-full"><div class="chart-title">Course · Accreditation Combo <span class="badge">grouped</span></div><div class="chart-wrapper tall"><canvas id="r2_chartCombo"></canvas></div></div>
-                    <div class="chart-card span-full"><div class="chart-title">CAM Team by Country <span class="badge">grouped</span></div><div class="chart-wrapper tall"><canvas id="r2_chartCamCountry"></canvas></div></div>
+                    <div class="chart-card span-full"><div class="chart-title">Accreditation / Team Members <span class="badge">stacked</span></div><div class="chart-wrapper tall"><canvas id="r2_chartCombo"></canvas></div></div>
+                    <div class="chart-card span-full"><div class="chart-title">Team Members by Country <span class="badge">top 15</span></div><div class="chart-wrapper tall"><canvas id="r2_chartCamCountry"></canvas></div></div>
                 </section>
 
-                <div class="footer-note">⚡ Upload your Excel file with columns: CAM Team, Country, Source, Course, Region, Accrediation</div>
+                <div class="footer-note">⚡ Upload your Excel file with columns: Team Members, Country, Source, Course, Region, Accrediation</div>
 
             </div>
         </div>
@@ -760,8 +781,7 @@
                     <div class="left">
                         <div class="icon">📊</div>
                         <div>
-                            <h1>Lead <span>Executive</span></h1>
-                            <div class="sub">Real-time performance &amp; ROI dashboard</div>
+                            <h1>Lead Report</h1>
                         </div>
                     </div>
                     <div class="right">
@@ -799,10 +819,7 @@
                     <div class="chart-card"><div class="chart-title">Revenue by Source <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r3_chartRevenue"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Spent by Source <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r3_chartSpent"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Lead Cost by Source <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r3_chartLeadCost"></canvas></div></div>
-                    <div class="chart-card"><div class="chart-title">Revenue vs Spent <span class="badge">grouped</span></div><div class="chart-wrapper"><canvas id="r3_chartRevVsSpent"></canvas></div></div>
-                    <div class="chart-card"><div class="chart-title">ROI by Source <span class="badge">%</span></div><div class="chart-wrapper"><canvas id="r3_chartROI"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Revenue per Lead <span class="badge">INR</span></div><div class="chart-wrapper"><canvas id="r3_chartRevPerLead"></canvas></div></div>
-                    <div class="chart-card"><div class="chart-title">Conversion Rate <span class="badge">%</span></div><div class="chart-wrapper"><canvas id="r3_chartConvRate"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Payments by Source <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r3_chartPayments"></canvas></div></div>
                 </section>
 
@@ -880,7 +897,7 @@
                 let content = clone.innerHTML;
                 // get CSS
                 const styles = document.querySelector('style').innerHTML;
-                const titles = { 1: 'Executive Dashboard', 2: 'CAM Executive Dashboard', 3: 'Lead Executive Dashboard' };
+                const titles = { 1: 'Lead  Dashboard', 2: 'CAM Dashboard', 3: 'Revenue Dashboard' };
                 const pageTitle = titles[reportNum];
                 // get the script for this report by searching for the PREFIX constant
                 const prefix = 'r' + reportNum + '_';
@@ -1136,7 +1153,7 @@
                             maintainAspectRatio: false,
                             plugins: {
                                 legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
-                                tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + ' pax' } }
+                                tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + ' leads' } }
                             },
                             cutout: '62%',
                         }
@@ -1151,109 +1168,26 @@
                 .value);
                 courseLabels = sorted.slice(0, 8).map(d => d.label);
                 courseValues = sorted.slice(0, 8).map(d => d.value);
-                renderChart('chartCourse', courseLabels, courseValues, 'Pax', null, 'bar');
+                renderChart('chartCourse', courseLabels, courseValues, 'Leads', null, 'bar');
 
                 // Accreditation
                 const accredMap = sumPax(data, 'accred');
                 const accredLabels = [...accredMap.keys()];
                 const accredValues = accredLabels.map(k => accredMap.get(k));
-                renderChart('chartAccred', accredLabels, accredValues, 'Pax', null, 'bar');
+                renderChart('chartAccred', accredLabels, accredValues, 'Leads', null, 'bar');
 
                 // Source
                 const sourceMap = sumPax(data, 'source');
                 const sourceLabels = [...sourceMap.keys()];
                 const sourceValues = sourceLabels.map(k => sourceMap.get(k));
-                renderChart('chartSource', sourceLabels, sourceValues, 'Pax', null, 'bar');
+                renderChart('chartSource', sourceLabels, sourceValues, 'Leads', null, 'bar');
 
                 // Region
                 const regionMap = sumPax(data, 'region');
                 const regionLabels = [...regionMap.keys()];
                 const regionValues = regionLabels.map(k => regionMap.get(k));
-                renderChart('chartRegion', regionLabels, regionValues, 'Pax', null, 'bar');
+                renderChart('chartRegion', regionLabels, regionValues, 'Leads', null, 'bar');
 
-                // Combo: Course · Accreditation
-                const comboContainer = document.getElementById(PREFIX + 'chartCombo');
-                const comboLabels = [...new Set(data.map(d => d.course))].slice(0, 6);
-                const accredSet = [...new Set(data.map(d => d.accred))].slice(0, 5);
-                const datasets = accredSet.map(acc => {
-                    const vals = comboLabels.map(course => {
-                        return data.filter(d => d.course === course && d.accred === acc).reduce((s, r) => s + (r
-                        .pax || 1), 0);
-                    });
-                    return {
-                        label: acc,
-                        data: vals,
-                        backgroundColor: ['#4f46e5', '#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'][accredSet
-                            .indexOf(acc) % 6]
-                    };
-                });
-                if (chartInstances['chartCombo']) chartInstances['chartCombo'].destroy();
-                const ctxCombo = comboContainer.getContext('2d');
-                if (comboLabels.length === 0) {
-                    chartInstances['chartCombo'] = new Chart(ctxCombo, {
-                        type: 'bar',
-                        data: { labels: ['No data'], datasets: [{ label: 'none', data: [0], backgroundColor: '#dce4ec' }] },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-                    });
-                } else {
-                    chartInstances['chartCombo'] = new Chart(ctxCombo, {
-                        type: 'bar',
-                        data: { labels: comboLabels, datasets: datasets },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: true, position: 'top', labels: { boxWidth: 12, fontSize: 10 } }
-                            },
-                            scales: {
-                                x: { stacked: false, grid: { display: false } },
-                                y: { beginAtZero: true, grid: { color: '#edf2f7' } }
-                            }
-                        }
-                    });
-                }
-
-                // Region · Accreditation Combo
-                const regionAccredContainer = document.getElementById(PREFIX + 'chartRegionAccred');
-                const regionLabelsCombo = [...new Set(data.map(d => d.region))].slice(0, 6);
-                const accredSetCombo = [...new Set(data.map(d => d.accred))].slice(0, 5);
-                const regionDatasets = accredSetCombo.map(acc => {
-                    const vals = regionLabelsCombo.map(region => {
-                        return data.filter(d => d.region === region && d.accred === acc).reduce((s, r) => s + (r
-                        .pax || 1), 0);
-                    });
-                    return {
-                        label: acc,
-                        data: vals,
-                        backgroundColor: ['#4f46e5', '#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'][
-                            accredSetCombo.indexOf(acc) % 6]
-                    };
-                });
-                if (chartInstances['chartRegionAccred']) chartInstances['chartRegionAccred'].destroy();
-                const ctxRegionAccred = regionAccredContainer.getContext('2d');
-                if (regionLabelsCombo.length === 0) {
-                    chartInstances['chartRegionAccred'] = new Chart(ctxRegionAccred, {
-                        type: 'bar',
-                        data: { labels: ['No data'], datasets: [{ label: 'none', data: [0], backgroundColor: '#dce4ec' }] },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-                    });
-                } else {
-                    chartInstances['chartRegionAccred'] = new Chart(ctxRegionAccred, {
-                        type: 'bar',
-                        data: { labels: regionLabelsCombo, datasets: regionDatasets },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: true, position: 'top', labels: { boxWidth: 12, fontSize: 10 } }
-                            },
-                            scales: {
-                                x: { stacked: false, grid: { display: false } },
-                                y: { beginAtZero: true, grid: { color: '#edf2f7' } }
-                            }
-                        }
-                    });
-                }
             }
 
             function populateFilterOptions() {
@@ -1299,6 +1233,24 @@
                             showToast('⚠️ No data found', 'warning');
                             return;
                         }
+                        // Find a lead-count column: 'Pax' or a 'Total Leads' variant.
+                        // If its values are just a plain row index (1, 2, 3 ... N), treat
+                        // that as a serial number the user added rather than a real
+                        // per-row count, and default every row to 1 instead of summing it.
+                        const sampleKeys = Object.keys(json[0] || {});
+                        const leadCountKey = sampleKeys.find(k => {
+                            const norm = k.toString().toLowerCase().trim();
+                            return norm === 'pax' || norm === 'total leads' || norm === 'total lead' || norm ===
+                                'leads';
+                        });
+                        let useLeadCountColumn = false;
+                        if (leadCountKey) {
+                            const vals = json.map(row => Number(row[leadCountKey]));
+                            const allNumeric = vals.every(v => !isNaN(v));
+                            const isSerial = allNumeric && vals.every((v, i) => v === i + 1);
+                            useLeadCountColumn = allNumeric && !isSerial;
+                        }
+
                         const mapped = json.map(row => {
                             return {
                                 accred: (row['Accrediation'] || row['Accreditation'] || row['accred'] || '')
@@ -1307,11 +1259,12 @@
                                 source: (row['Source'] || row['source'] || '').toString().trim(),
                                 country: (row['Country'] || row['country'] || '').toString().trim(),
                                 course: (row['Course'] || row['course'] || '').toString().trim(),
-                                pax: parseInt(row['Pax'] || row['pax'] || 1) || 1
+                                pax: (leadCountKey && useLeadCountColumn) ? (parseInt(row[leadCountKey]) || 1) : 1
                             };
                         }).filter(d => d.course && d.accred);
                         if (mapped.length === 0) {
-                            showToast('⚠️ Could not parse columns. Expected: Accrediation, Region, Source, Country, Course, Pax',
+                            showToast(
+                                '⚠️ Could not parse columns. Expected: Accrediation, Region, Source, Country, Course, Total Leads',
                                 'warning');
                             return;
                         }
@@ -1466,9 +1419,6 @@
             }
 
             function updateKPIs(data) {
-                getEl('kpiTotal').textContent = data.length;
-                getEl('kpiTotalChange').textContent = '● ' + data.length + ' records';
-
                 const countries = new Set(data.map(d => d.country));
                 getEl('kpiCountries').textContent = countries.size;
                 getEl('kpiCountriesChange').textContent = '● ' + countries.size + ' unique';
@@ -1484,6 +1434,9 @@
                 const cams = new Set(data.map(d => d.cam));
                 getEl('kpiCamMembers').textContent = cams.size;
                 getEl('kpiCamMembersChange').textContent = '● ' + cams.size + ' members';
+
+                getEl('kpiCamActivity').textContent = data.length;
+                getEl('kpiCamActivityChange').textContent = '● ' + data.length + ' records';
 
                 const sources = new Set(data.map(d => d.source));
                 getEl('kpiSources').textContent = sources.size;
@@ -1600,19 +1553,26 @@
                 const regionValues = regionLabels.map(k => regionMap.get(k));
                 renderChart('chartRegion', regionLabels, regionValues, 'Region', null, 'bar');
 
-                // Combo: Course · Accreditation
+                // Combo: Accreditation · Team Members (stacked, one bar per accreditation, team members stacked within)
                 const comboContainer = document.getElementById(PREFIX + 'chartCombo');
-                const comboLabels = [...new Set(data.map(d => d.course))];
-                const accredSet = [...new Set(data.map(d => d.accred))];
-                const datasets = accredSet.map(acc => {
-                    const vals = comboLabels.map(course => {
-                        return data.filter(d => d.course === course && d.accred === acc).length;
+                const accredTotals = [...new Set(data.map(d => d.accred))].map(a => ({
+                    accred: a,
+                    total: data.filter(d => d.accred === a).length
+                })).sort((a, b) => b.total - a.total);
+                const comboLabels = accredTotals.map(a => a.accred);
+                const comboCamSet = [...new Set(data.map(d => d.cam))];
+                const comboPalette = ['#4f46e5', '#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899',
+                    '#14b8a6', '#f97316', '#8b5cf6', '#84cc16', '#e11d48', '#0ea5e9', '#a855f7', '#22c55e',
+                    '#eab308', '#f43f5e', '#3b82f6', '#d946ef', '#65a30d', '#0891b2'
+                ];
+                const datasets = comboCamSet.map(cam => {
+                    const vals = comboLabels.map(acc => {
+                        return data.filter(d => d.accred === acc && d.cam === cam).length;
                     });
                     return {
-                        label: acc,
+                        label: cam,
                         data: vals,
-                        backgroundColor: ['#4f46e5', '#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'][accredSet
-                            .indexOf(acc) % 6]
+                        backgroundColor: comboPalette[comboCamSet.indexOf(cam) % comboPalette.length]
                     };
                 });
                 if (chartInstances['chartCombo']) chartInstances['chartCombo'].destroy();
@@ -1631,28 +1591,35 @@
                             responsive: true,
                             maintainAspectRatio: false,
                             plugins: {
-                                legend: { display: true, position: 'top', labels: { boxWidth: 12, fontSize: 10 } }
+                                legend: { display: true, position: 'top', labels: { boxWidth: 12, fontSize: 10 } },
+                                tooltip: { mode: 'index', intersect: false }
                             },
                             scales: {
-                                x: { stacked: false, grid: { display: false } },
-                                y: { beginAtZero: true, grid: { color: '#edf2f7' } }
+                                x: { stacked: true, grid: { display: false } },
+                                y: { stacked: true, beginAtZero: true, grid: { color: '#edf2f7' } }
                             }
                         }
                     });
                 }
 
-                // CAM by Country
+                // CAM by Country (stacked, top 15 countries by total)
                 const camSet = [...new Set(data.map(d => d.cam))];
-                const countrySet = [...new Set(data.map(d => d.country))];
-                const camCountryLabels = countrySet;
+                const countryTotals = [...new Set(data.map(d => d.country))].map(c => ({
+                    country: c,
+                    total: data.filter(d => d.country === c).length
+                })).sort((a, b) => b.total - a.total);
+                const camCountryLabels = countryTotals.slice(0, 15).map(c => c.country);
+                const camPalette = ['#4f46e5', '#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899',
+                    '#14b8a6', '#f97316', '#8b5cf6', '#84cc16', '#06b6d4', '#e11d48', '#0ea5e9', '#a855f7',
+                    '#22c55e', '#eab308', '#f43f5e', '#3b82f6', '#d946ef', '#65a30d', '#0891b2'
+                ];
                 const camCountryDatasets = camSet.map(cam => {
                     return {
                         label: cam,
-                        data: countrySet.map(c => {
+                        data: camCountryLabels.map(c => {
                             return data.filter(d => d.cam === cam && d.country === c).length;
                         }),
-                        backgroundColor: ['#4f46e5', '#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'][camSet
-                            .indexOf(cam) % 6]
+                        backgroundColor: camPalette[camSet.indexOf(cam) % camPalette.length]
                     };
                 });
                 if (chartInstances['chartCamCountry']) chartInstances['chartCamCountry'].destroy();
@@ -1671,11 +1638,12 @@
                             responsive: true,
                             maintainAspectRatio: false,
                             plugins: {
-                                legend: { display: true, position: 'top', labels: { boxWidth: 12, fontSize: 10 } }
+                                legend: { display: true, position: 'top', labels: { boxWidth: 12, fontSize: 10 } },
+                                tooltip: { mode: 'index', intersect: false }
                             },
                             scales: {
-                                x: { stacked: false, grid: { display: false } },
-                                y: { beginAtZero: true, grid: { color: '#edf2f7' } }
+                                x: { stacked: true, grid: { display: false } },
+                                y: { stacked: true, beginAtZero: true, grid: { color: '#edf2f7' } }
                             }
                         }
                     });
@@ -1729,7 +1697,7 @@
                         }
                         const mapped = json.map(row => {
                             return {
-                                cam: row['CAM Team'] || row['CAMTeam'] || row['cam'] || '',
+                                cam: row['CAM Team'] || row['Team Members'] || row['CAMTeam'] || row['cam'] || '',
                                 country: row['Country'] || row['country'] || '',
                                 source: row['Source'] || row['source'] || '',
                                 course: row['Course'] || row['course'] || '',
@@ -1738,7 +1706,7 @@
                             };
                         }).filter(d => d.cam && d.country);
                         if (mapped.length === 0) {
-                            showToast('⚠️ Could not parse columns. Expected: CAM Team, Country, Source, Course, Region, Accrediation',
+                            showToast('⚠️ Could not parse columns. Expected: Team Members, Country, Source, Course, Region, Accrediation',
                                 'warning');
                             return;
                         }
@@ -2065,70 +2033,6 @@
                     }
                 });
 
-                // 5. Revenue vs Spent
-                charts.revVsSpent = new Chart(document.getElementById(PREFIX + 'chartRevVsSpent'), {
-                    type: 'bar',
-                    data: {
-                        labels: srcs,
-                        datasets: [{
-                            label: 'Revenue',
-                            data: revenues,
-                            backgroundColor: 'rgba(79,70,229,0.7)',
-                            borderColor: '#4f46e5',
-                            borderWidth: 1.5,
-                            borderRadius: 4,
-                        }, {
-                            label: 'Spent',
-                            data: spent,
-                            backgroundColor: 'rgba(239,68,68,0.6)',
-                            borderColor: '#ef4444',
-                            borderWidth: 1.5,
-                            borderRadius: 4,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
-                            tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ₹' + fmt(ctx.parsed.y) } }
-                        },
-                        scales: {
-                            y: { beginAtZero: true, ticks: { callback: v => '₹' + fmt(v) } },
-                            x: { grid: { display: false } }
-                        }
-                    }
-                });
-
-                // 6. ROI
-                charts.roi = new Chart(document.getElementById(PREFIX + 'chartROI'), {
-                    type: 'bar',
-                    data: {
-                        labels: srcs,
-                        datasets: [{
-                            label: 'ROI (%)',
-                            data: roi,
-                            backgroundColor: roi.map(v => v > 10 ? 'rgba(16,185,129,0.7)' : v > 5 ?
-                                'rgba(245,158,11,0.7)' : 'rgba(239,68,68,0.6)'),
-                            borderColor: roi.map(v => v > 10 ? '#10b981' : v > 5 ? '#f59e0b' : '#ef4444'),
-                            borderWidth: 1.5,
-                            borderRadius: 6,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: { callbacks: { label: ctx => fmt(ctx.parsed.y) + '%' } }
-                        },
-                        scales: {
-                            y: { beginAtZero: true, ticks: { callback: v => v + '%' } },
-                            x: { grid: { display: false } }
-                        }
-                    }
-                });
-
                 // 7. Revenue per Lead
                 charts.revPerLead = new Chart(document.getElementById(PREFIX + 'chartRevPerLead'), {
                     type: 'bar',
@@ -2152,35 +2056,6 @@
                         },
                         scales: {
                             y: { beginAtZero: true, ticks: { callback: v => '₹' + fmt(v) } },
-                            x: { grid: { display: false } }
-                        }
-                    }
-                });
-
-                // 8. Conversion Rate
-                charts.convRate = new Chart(document.getElementById(PREFIX + 'chartConvRate'), {
-                    type: 'bar',
-                    data: {
-                        labels: srcs,
-                        datasets: [{
-                            label: 'Conversion Rate (%)',
-                            data: convRate,
-                            backgroundColor: convRate.map(v => v > 40 ? 'rgba(16,185,129,0.7)' : v > 20 ?
-                                'rgba(245,158,11,0.7)' : 'rgba(239,68,68,0.6)'),
-                            borderColor: convRate.map(v => v > 40 ? '#10b981' : v > 20 ? '#f59e0b' : '#ef4444'),
-                            borderWidth: 1.5,
-                            borderRadius: 6,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: { callbacks: { label: ctx => fmt(ctx.parsed.y) + '%' } }
-                        },
-                        scales: {
-                            y: { beginAtZero: true, ticks: { callback: v => v + '%' } },
                             x: { grid: { display: false } }
                         }
                     }
