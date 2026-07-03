@@ -761,10 +761,7 @@
                     <div class="chart-card"><div class="chart-title">Course Breakdown <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r2_chartCourse"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Accreditation <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r2_chartAccred"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Team Members Activity <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r2_chartCam"></canvas></div></div>
-                    <div class="chart-card"><div class="chart-title">Source Breakdown <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r2_chartSource"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Region <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r2_chartRegion"></canvas></div></div>
-                    <div class="chart-card span-full"><div class="chart-title">Accreditation / Team Members <span class="badge">stacked</span></div><div class="chart-wrapper tall"><canvas id="r2_chartCombo"></canvas></div></div>
-                    <div class="chart-card span-full"><div class="chart-title">Team Members by Country <span class="badge">top 15</span></div><div class="chart-wrapper tall"><canvas id="r2_chartCamCountry"></canvas></div></div>
                 </section>
 
                 <div class="footer-note">⚡ Upload your Excel file with columns: Team Members, Country, Source, Course, Region, Accrediation</div>
@@ -810,7 +807,6 @@
                     <div class="kpi-card"><div class="accent-line" style="background:#06b6d4;"></div><div class="label">Total Revenue</div><div class="value" id="r3_kpiRevenue">—</div><div class="change" id="r3_kpiRevenueChange">● —</div><div class="icon-bg">📈</div></div>
                     <div class="kpi-card"><div class="accent-line" style="background:#10b981;"></div><div class="label">Avg. Lead Cost</div><div class="value" id="r3_kpiAvgCost">—</div><div class="change" id="r3_kpiAvgCostChange">● —</div><div class="icon-bg">🏷️</div></div>
                     <div class="kpi-card"><div class="accent-line" style="background:#f59e0b;"></div><div class="label">Total Payments</div><div class="value" id="r3_kpiPayments">—</div><div class="change" id="r3_kpiPaymentsChange">● —</div><div class="icon-bg">✅</div></div>
-                    <div class="kpi-card"><div class="accent-line" style="background:#ef4444;"></div><div class="label">Overall ROI</div><div class="value" id="r3_kpiROI">—</div><div class="change" id="r3_kpiROIChange">● —</div><div class="icon-bg">🎯</div></div>
                 </section>
 
                 <!-- ─── Charts ─── -->
@@ -819,7 +815,6 @@
                     <div class="chart-card"><div class="chart-title">Revenue by Source <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r3_chartRevenue"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Spent by Source <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r3_chartSpent"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Lead Cost by Source <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r3_chartLeadCost"></canvas></div></div>
-                    <div class="chart-card"><div class="chart-title">Revenue per Lead <span class="badge">INR</span></div><div class="chart-wrapper"><canvas id="r3_chartRevPerLead"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Payments by Source <span class="badge">bar</span></div><div class="chart-wrapper"><canvas id="r3_chartPayments"></canvas></div></div>
                 </section>
 
@@ -1539,115 +1534,17 @@
                 renderChart('chartAccred', accredLabels, accredValues, 'Accred.', null, 'bar');
 
                 const camMap = buildCountMap(data, 'cam');
-                const camLabels = [...camMap.keys()];
-                const camValues = camLabels.map(k => camMap.get(k));
+                let camLabels = [...camMap.keys()];
+                let camValues = camLabels.map(k => camMap.get(k));
+                const camSorted = camLabels.map((k, i) => ({ label: k, value: camValues[i] })).sort((a, b) => b.value - a.value);
+                camLabels = camSorted.map(d => d.label);
+                camValues = camSorted.map(d => d.value);
                 renderChart('chartCam', camLabels, camValues, 'CAM', null, 'bar');
-
-                const sourceMap = buildCountMap(data, 'source');
-                const sourceLabels = [...sourceMap.keys()];
-                const sourceValues = sourceLabels.map(k => sourceMap.get(k));
-                renderChart('chartSource', sourceLabels, sourceValues, 'Source', null, 'bar');
 
                 const regionMap = buildCountMap(data, 'region');
                 const regionLabels = [...regionMap.keys()];
                 const regionValues = regionLabels.map(k => regionMap.get(k));
                 renderChart('chartRegion', regionLabels, regionValues, 'Region', null, 'bar');
-
-                // Combo: Accreditation · Team Members (stacked, one bar per accreditation, team members stacked within)
-                const comboContainer = document.getElementById(PREFIX + 'chartCombo');
-                const accredTotals = [...new Set(data.map(d => d.accred))].map(a => ({
-                    accred: a,
-                    total: data.filter(d => d.accred === a).length
-                })).sort((a, b) => b.total - a.total);
-                const comboLabels = accredTotals.map(a => a.accred);
-                const comboCamSet = [...new Set(data.map(d => d.cam))];
-                const comboPalette = ['#4f46e5', '#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899',
-                    '#14b8a6', '#f97316', '#8b5cf6', '#84cc16', '#e11d48', '#0ea5e9', '#a855f7', '#22c55e',
-                    '#eab308', '#f43f5e', '#3b82f6', '#d946ef', '#65a30d', '#0891b2'
-                ];
-                const datasets = comboCamSet.map(cam => {
-                    const vals = comboLabels.map(acc => {
-                        return data.filter(d => d.accred === acc && d.cam === cam).length;
-                    });
-                    return {
-                        label: cam,
-                        data: vals,
-                        backgroundColor: comboPalette[comboCamSet.indexOf(cam) % comboPalette.length]
-                    };
-                });
-                if (chartInstances['chartCombo']) chartInstances['chartCombo'].destroy();
-                const ctxCombo = comboContainer.getContext('2d');
-                if (comboLabels.length === 0) {
-                    chartInstances['chartCombo'] = new Chart(ctxCombo, {
-                        type: 'bar',
-                        data: { labels: ['No data'], datasets: [{ label: 'none', data: [0], backgroundColor: '#dce4ec' }] },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-                    });
-                } else {
-                    chartInstances['chartCombo'] = new Chart(ctxCombo, {
-                        type: 'bar',
-                        data: { labels: comboLabels, datasets: datasets },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: true, position: 'top', labels: { boxWidth: 12, fontSize: 10 } },
-                                tooltip: { mode: 'index', intersect: false }
-                            },
-                            scales: {
-                                x: { stacked: true, grid: { display: false } },
-                                y: { stacked: true, beginAtZero: true, grid: { color: '#edf2f7' } }
-                            }
-                        }
-                    });
-                }
-
-                // CAM by Country (stacked, top 15 countries by total)
-                const camSet = [...new Set(data.map(d => d.cam))];
-                const countryTotals = [...new Set(data.map(d => d.country))].map(c => ({
-                    country: c,
-                    total: data.filter(d => d.country === c).length
-                })).sort((a, b) => b.total - a.total);
-                const camCountryLabels = countryTotals.slice(0, 15).map(c => c.country);
-                const camPalette = ['#4f46e5', '#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899',
-                    '#14b8a6', '#f97316', '#8b5cf6', '#84cc16', '#06b6d4', '#e11d48', '#0ea5e9', '#a855f7',
-                    '#22c55e', '#eab308', '#f43f5e', '#3b82f6', '#d946ef', '#65a30d', '#0891b2'
-                ];
-                const camCountryDatasets = camSet.map(cam => {
-                    return {
-                        label: cam,
-                        data: camCountryLabels.map(c => {
-                            return data.filter(d => d.cam === cam && d.country === c).length;
-                        }),
-                        backgroundColor: camPalette[camSet.indexOf(cam) % camPalette.length]
-                    };
-                });
-                if (chartInstances['chartCamCountry']) chartInstances['chartCamCountry'].destroy();
-                const ctxCamCountry = document.getElementById(PREFIX + 'chartCamCountry').getContext('2d');
-                if (camCountryLabels.length === 0) {
-                    chartInstances['chartCamCountry'] = new Chart(ctxCamCountry, {
-                        type: 'bar',
-                        data: { labels: ['No data'], datasets: [{ label: 'none', data: [0], backgroundColor: '#dce4ec' }] },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-                    });
-                } else {
-                    chartInstances['chartCamCountry'] = new Chart(ctxCamCountry, {
-                        type: 'bar',
-                        data: { labels: camCountryLabels, datasets: camCountryDatasets },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: true, position: 'top', labels: { boxWidth: 12, fontSize: 10 } },
-                                tooltip: { mode: 'index', intersect: false }
-                            },
-                            scales: {
-                                x: { stacked: true, grid: { display: false } },
-                                y: { stacked: true, beginAtZero: true, grid: { color: '#edf2f7' } }
-                            }
-                        }
-                    });
-                }
             }
 
             function populateFilterOptions() {
@@ -1898,13 +1795,11 @@
                 getEl('kpiRevenue').textContent = '—';
                 getEl('kpiAvgCost').textContent = '—';
                 getEl('kpiPayments').textContent = '—';
-                getEl('kpiROI').textContent = '—';
                 getEl('kpiLeadsChange').textContent = '● —';
                 getEl('kpiSpentChange').textContent = '● —';
                 getEl('kpiRevenueChange').textContent = '● —';
                 getEl('kpiAvgCostChange').textContent = '● —';
                 getEl('kpiPaymentsChange').textContent = '● —';
-                getEl('kpiROIChange').textContent = '● —';
             }
 
             function buildCharts(filtered) {
@@ -2033,34 +1928,6 @@
                     }
                 });
 
-                // 7. Revenue per Lead
-                charts.revPerLead = new Chart(document.getElementById(PREFIX + 'chartRevPerLead'), {
-                    type: 'bar',
-                    data: {
-                        labels: srcs,
-                        datasets: [{
-                            label: 'Revenue per Lead (INR)',
-                            data: revPerLead,
-                            backgroundColor: colorsAlpha,
-                            borderColor: colors,
-                            borderWidth: 1.5,
-                            borderRadius: 6,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: { callbacks: { label: ctx => '₹' + fmt(ctx.parsed.y) } }
-                        },
-                        scales: {
-                            y: { beginAtZero: true, ticks: { callback: v => '₹' + fmt(v) } },
-                            x: { grid: { display: false } }
-                        }
-                    }
-                });
-
                 // 9. Payments
                 charts.payments = new Chart(document.getElementById(PREFIX + 'chartPayments'), {
                     type: 'bar',
@@ -2108,14 +1975,12 @@
                 getEl('kpiRevenue').textContent = fmtCurrency(totalRevenue);
                 getEl('kpiAvgCost').textContent = fmtCurrency(avgCost);
                 getEl('kpiPayments').textContent = fmt(totalPayments);
-                getEl('kpiROI').textContent = fmtPercent(overallROI);
 
                 getEl('kpiLeadsChange').textContent = '● ' + (filtered.length === 1 ? filtered[0].source : 'all sources');
                 getEl('kpiSpentChange').textContent = '● ' + fmtCurrency(totalSpent);
                 getEl('kpiRevenueChange').textContent = '● ' + fmtCurrency(totalRevenue);
                 getEl('kpiAvgCostChange').textContent = '● per lead';
                 getEl('kpiPaymentsChange').textContent = '● ' + fmt(totalPayments) + ' conversions';
-                getEl('kpiROIChange').textContent = '● ' + (overallROI > 5 ? 'healthy' : 'needs attention');
             }
 
             function updateDashboard(filter) {
