@@ -884,6 +884,7 @@
                     <div class="chart-card"><div class="chart-title">Country Wise <span class="badge">top 15</span></div><div class="chart-wrapper"><canvas id="r4_chartCountry"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Accreditation Wise <span class="badge">donut</span></div><div class="chart-wrapper"><canvas id="r4_chartAccred"></canvas></div></div>
                     <div class="chart-card"><div class="chart-title">Course Wise <span class="badge">top 12</span></div><div class="chart-wrapper"><canvas id="r4_chartCourse"></canvas></div></div>
+                    <div class="chart-card span-full"><div class="chart-title">Month / Course Wise <span class="badge">top 8 courses · trend</span></div><div class="chart-wrapper tall"><canvas id="r4_chartMonthCourse"></canvas></div></div>
                 </section>
 
                 <div class="footer-note">⚡ Upload your Excel file with columns: Country, Accrediation, Year, Month, Course</div>
@@ -2495,6 +2496,66 @@
                 courseLabels = courseSorted.slice(0, 12).map(d => d.label);
                 courseValues = courseSorted.slice(0, 12).map(d => d.value);
                 renderChart('chartCourse', courseLabels, courseValues, 'Registrations', null, 'bar');
+
+                // Month / Course Wise (multi-line trend: top courses over chronological Month-Year periods)
+                const mcSortMap = new Map();
+                data.forEach(d => { if (d.monthKey) mcSortMap.set(d.monthKey, d.monthSort); });
+                const mcMonthLabels = [...mcSortMap.keys()].filter(Boolean).sort((a, b) => (mcSortMap.get(a) || 0) -
+                    (mcSortMap.get(b) || 0));
+
+                const topCourses = courseSorted.slice(0, 8).map(d => d.label);
+
+                const ctxMC = document.getElementById(PREFIX + 'chartMonthCourse').getContext('2d');
+                if (chartInstances['chartMonthCourse']) chartInstances['chartMonthCourse'].destroy();
+                if (!mcMonthLabels.length || !topCourses.length) {
+                    chartInstances['chartMonthCourse'] = new Chart(ctxMC, {
+                        type: 'line',
+                        data: { labels: ['No data'],
+                            datasets: [{ label: 'Registrations', data: [0], borderColor: '#dce4ec' }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                    });
+                } else {
+                    const mcColors = ['#8b5cf6', '#4f46e5', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#7c3aed',
+                        '#ec4899'
+                    ];
+                    const mcCounts = {};
+                    topCourses.forEach(c => { mcCounts[c] = mcMonthLabels.map(() => 0); });
+                    data.forEach(d => {
+                        if (!d.monthKey || !mcCounts[d.course]) return;
+                        const mi = mcMonthLabels.indexOf(d.monthKey);
+                        if (mi !== -1) mcCounts[d.course][mi]++;
+                    });
+                    chartInstances['chartMonthCourse'] = new Chart(ctxMC, {
+                        type: 'line',
+                        data: {
+                            labels: mcMonthLabels,
+                            datasets: topCourses.map((c, i) => ({
+                                label: c,
+                                data: mcCounts[c],
+                                borderColor: mcColors[i % mcColors.length],
+                                backgroundColor: mcColors[i % mcColors.length],
+                                borderWidth: 2,
+                                tension: 0.35,
+                                pointRadius: 2,
+                                pointHoverRadius: 4,
+                                fill: false,
+                            }))
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: { mode: 'index', intersect: false },
+                            plugins: {
+                                legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+                                tooltip: { mode: 'index', intersect: false }
+                            },
+                            scales: {
+                                y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#edf2f7' } },
+                                x: { grid: { display: false } }
+                            }
+                        }
+                    });
+                }
             }
 
             function populateFilterOptions() {
