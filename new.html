@@ -2280,7 +2280,7 @@
             function filterData(data, filters) {
                 return data.filter(d => {
                     if (filters.year !== 'all' && String(d.year) !== String(filters.year)) return false;
-                    if (filters.month !== 'all' && d.monthLabel !== filters.month) return false;
+                    if (filters.month !== 'all' && d.monthKey !== filters.month) return false;
                     if (filters.country !== 'all' && d.country !== filters.country) return false;
                     if (filters.accred !== 'all' && d.accred !== filters.accred) return false;
                     if (filters.course !== 'all' && d.course !== filters.course) return false;
@@ -2362,9 +2362,9 @@
                 getEl('kpiYears').textContent = years.size;
                 getEl('kpiYearsChange').textContent = '● ' + [...years].sort().join(', ');
 
-                const months = new Set(data.map(d => d.monthLabel).filter(Boolean));
+                const months = new Set(data.map(d => d.monthKey).filter(Boolean));
                 getEl('kpiMonths').textContent = months.size;
-                getEl('kpiMonthsChange').textContent = '● of 12';
+                getEl('kpiMonthsChange').textContent = '● periods';
 
                 const accs = new Set(data.map(d => d.accred));
                 getEl('kpiAccred').textContent = accs.size;
@@ -2430,9 +2430,12 @@
                 const yearValues = yearLabels.map(k => yearMap.get(k));
                 renderChart('chartYear', yearLabels, yearValues, 'Registrations', null, 'bar');
 
-                // Month Wise (line, calendar order, aggregated across all years in the filtered set)
-                const monthMap = buildCountMap(data, 'monthLabel');
-                const monthLabels = MONTH_NAMES.filter(m => monthMap.has(m));
+                // Month Wise (line, chronological Month-Year periods e.g. "May-25")
+                const monthMap = buildCountMap(data, 'monthKey');
+                const sortMap = new Map();
+                data.forEach(d => { if (d.monthKey) sortMap.set(d.monthKey, d.monthSort); });
+                const monthLabels = [...monthMap.keys()].filter(Boolean).sort((a, b) => (sortMap.get(a) || 0) - (
+                    sortMap.get(b) || 0));
                 const monthValues = monthLabels.map(m => monthMap.get(m));
                 renderChart('chartMonth', monthLabels, monthValues, 'Registrations', null, 'line');
 
@@ -2500,12 +2503,13 @@
                 fields.forEach((f, idx) => {
                     let values;
                     if (f === 'month') {
-                        const present = new Set(currentData.map(d => d.monthLabel).filter(Boolean));
-                        values = MONTH_NAMES.filter(m => present.has(m));
+                        const sortMap = new Map();
+                        currentData.forEach(d => { if (d.monthKey) sortMap.set(d.monthKey, d.monthSort); });
+                        values = [...sortMap.keys()].sort((a, b) => (sortMap.get(a) || 0) - (sortMap.get(b) || 0));
                     } else if (f === 'year') {
                         values = getUniqueValues(currentData, f).sort((a, b) => a - b);
                     } else {
-                        values = getUniqueValues(currentData, f === 'month' ? 'monthLabel' : f);
+                        values = getUniqueValues(currentData, f);
                     }
                     const sel = getEl(selectIds[idx]);
                     const currentVal = sel.value;
@@ -2557,7 +2561,20 @@
                             const monthLabel = monthInfo ? MONTH_NAMES[monthInfo.monthIndex] : '';
                             let year = rawYear !== undefined && rawYear !== '' ? Number(rawYear) : null;
                             if ((year === null || isNaN(year)) && monthInfo && monthInfo.year) year = monthInfo.year;
-                            return { country, accred, course, year, monthLabel };
+                            // "Month-Year" key like "May-25" so the Month filter can
+                            // distinguish May 2025 from May 2026 rather than merging
+                            // every May together, plus a numeric sort key so the
+                            // dropdown/chart list these chronologically.
+                            let monthKey = '';
+                            let monthSort = 0;
+                            if (monthInfo && year) {
+                                monthKey = monthLabel + '-' + String(year).slice(-2);
+                                monthSort = year * 100 + monthInfo.monthIndex;
+                            } else if (monthLabel) {
+                                monthKey = monthLabel;
+                                monthSort = monthInfo.monthIndex;
+                            }
+                            return { country, accred, course, year, monthLabel, monthKey, monthSort };
                         }).filter(d => d.country && d.course);
                         if (mapped.length === 0) {
                             showToast(
