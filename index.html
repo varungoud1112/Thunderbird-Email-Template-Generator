@@ -54,6 +54,25 @@
             font-weight: bold;
         }
 
+        .live-badge {
+            display: inline-block;
+            margin-left: 8px;
+            background: #28a745;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            vertical-align: middle;
+            animation: pulseLive 2s infinite;
+        }
+
+        @keyframes pulseLive {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
         .header-buttons {
             position: absolute;
             right: 20px;
@@ -394,6 +413,11 @@
             font-size: 14px;
         }
 
+        .add-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .sales-list-header {
             background: #e8f0fe;
             padding: 10px 12px;
@@ -705,6 +729,13 @@
             font-size: 14px;
         }
 
+        .sync-note {
+            font-size: 11px;
+            color: #888;
+            text-align: center;
+            margin-top: 10px;
+        }
+
         @media(max-width:1000px) {
             .main {
                 flex-direction: column;
@@ -735,7 +766,7 @@
 
     <div class="container">
         <div class="header">
-            <span class="header-badge">✨ Updated Version v2.1</span>
+            <span class="header-badge">✨ Updated Version v2.2</span>
             Email Template Generator
             <div class="header-buttons">
                 <button class="courses-btn" onclick="openCoursesManager()">📚 Manage Courses</button>
@@ -746,7 +777,7 @@
 
         <div class="main">
             <div class="left-panel">
-                <div class="section-title">📝 Input Details</div>
+                <div class="section-title">📝 Input Details <span class="live-badge" title="Courses & Sales Persons sync live for everyone">🔴 LIVE</span></div>
 
                 <label>👤 Customer Name</label>
                 <input type="text" id="customer" placeholder="Enter Customer Name" onkeyup="autoGenerateTemplate()" onchange="autoGenerateTemplate()">
@@ -781,6 +812,7 @@
                 <div class="session-info">
                     🔒 Template copy is only allowed using the "Copy Template" button
                 </div>
+                <div class="sync-note">Courses & Sales Persons are shared and update automatically for all users of this link.</div>
             </div>
 
             <div class="right-panel">
@@ -794,7 +826,7 @@
     <div id="coursesManagerModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>📚 Manage Courses</h3>
+                <h3>📚 Manage Courses <span class="live-badge">🔴 LIVE</span></h3>
                 <button class="modal-close" onclick="closeCoursesManager()">✕</button>
             </div>
             <div class="modal-body" id="coursesManagerBody"></div>
@@ -805,7 +837,7 @@
     <div id="salesManagerModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>👥 Manage Sales Persons</h3>
+                <h3>👥 Manage Sales Persons <span class="live-badge">🔴 LIVE</span></h3>
                 <button class="modal-close" onclick="closeSalesManager()">✕</button>
             </div>
             <div class="modal-body" id="salesManagerBody"></div>
@@ -836,7 +868,7 @@
                 <div class="simple-step"><div class="step-icon">3️⃣</div><div class="step-info"><strong>Select Sales Person</strong><span>Region auto-detects automatically</span></div></div>
                 <div class="simple-step"><div class="step-icon">✨</div><div class="step-info"><strong>Auto-Generates</strong><span>Template appears instantly on right</span></div></div>
                 <div class="simple-step"><div class="step-icon">📋</div><div class="step-info"><strong>Copy Template</strong><span>Use the Copy Template button only</span></div></div>
-                <div class="simple-step"><div class="step-icon">📚</div><div class="step-info"><strong>Manage Courses</strong><span>Add or remove courses anytime</span></div></div>
+                <div class="simple-step"><div class="step-icon">📚</div><div class="step-info"><strong>Manage Courses</strong><span>Add or remove courses anytime — changes appear for everyone using this link</span></div></div>
             </div>
             <div class="howto-footer"><button class="close-howto-btn" onclick="closeHowToPopup()">Got it!</button></div>
         </div>
@@ -901,7 +933,7 @@
         const ADMIN_PASSWORD = "admin123";
 
         // ============================================
-        // VISITOR LOGS STORAGE
+        // VISITOR LOGS STORAGE (per-device; not shared)
         // ============================================
         let visitorLogs = [];
 
@@ -944,7 +976,7 @@
         }
 
         // ============================================
-        // TEMPLATE COPY COUNT STORAGE
+        // TEMPLATE COPY COUNT STORAGE (per-device; not shared)
         // ============================================
         let templateCopyCount = 0;
 
@@ -1003,11 +1035,11 @@
         }
 
         // ============================================
-        // COURSES MANAGEMENT (localStorage-backed)
+        // COURSES MANAGEMENT (SHARED storage — live for everyone)
         // ============================================
         let courses = [];
 
-        // THE FULL COURSE LIST AS PROVIDED (including duplicates)
+        // THE FULL COURSE LIST AS PROVIDED (including duplicates) — used only as first-time default
         const DEFAULT_COURSES = [
             "Certified Scrum Master (CSM) Certification Training",
             "Certified Scrum Product Owner (CSPO) Certification Training",
@@ -1182,19 +1214,32 @@
             "Microsoft Certified Azure Solutions Architect Expert (AZ-305) Certification Training"
         ];
 
-        function loadCourses() {
-            const saved = localStorage.getItem('coursesData');
-            if (saved) {
-                courses = JSON.parse(saved);
-            } else {
+        // Load courses from SHARED storage (same list for every visitor on this link)
+        async function loadCourses() {
+            try {
+                const result = await window.storage.get('courses', true);
+                if (result && result.value) {
+                    courses = JSON.parse(result.value);
+                } else {
+                    courses = [...DEFAULT_COURSES];
+                    await saveCourses();
+                }
+            } catch (e) {
+                // Key doesn't exist yet (first ever run) or a fetch error — seed shared storage
                 courses = [...DEFAULT_COURSES];
-                saveCourses();
+                try { await saveCourses(); } catch (e2) { console.error('Could not seed shared courses', e2); }
             }
             renderCourseDropdown();
         }
 
-        function saveCourses() {
-            localStorage.setItem('coursesData', JSON.stringify(courses));
+        async function saveCourses() {
+            try {
+                const result = await window.storage.set('courses', JSON.stringify(courses), true);
+                if (!result) console.error('Course save returned no result');
+            } catch (e) {
+                console.error('Failed to save courses to shared storage', e);
+                showToast('Could not sync course list — check connection', false);
+            }
         }
 
         function renderCourseDropdown() {
@@ -1207,90 +1252,113 @@
             dd.innerHTML = html;
         }
 
-        function addCourse(name) {
+        async function addCourse(name) {
             name = name.trim();
             if (!name) return false;
             if (courses.includes(name)) return false;
             courses.push(name);
             courses.sort();
-            saveCourses();
+            await saveCourses();
             renderCourseDropdown();
             return true;
         }
 
-        function deleteCourse(name) {
+        async function deleteCourse(name) {
             const index = courses.indexOf(name);
             if (index === -1) return false;
             courses.splice(index, 1);
-            saveCourses();
+            await saveCourses();
             renderCourseDropdown();
             return true;
         }
 
         // ============================================
-        // SALES PERSONS MANAGEMENT
+        // SALES PERSONS MANAGEMENT (SHARED storage — live for everyone)
         // ============================================
         let salesPersons = [];
         let selectedRegionValue = "";
 
-        function loadSalesData() {
-            const saved = localStorage.getItem('salesPersons');
-            if (saved) {
-                salesPersons = JSON.parse(saved);
-            } else {
-                salesPersons = [
-                    { id: Date.now() + 1, name: "Vidya", region: "india" },
-                    { id: Date.now() + 2, name: "Yash", region: "india" },
-                    { id: Date.now() + 3, name: "Sunil", region: "india" },
-                    { id: Date.now() + 4, name: "Abhishek", region: "india" },
-                    { id: Date.now() + 5, name: "Akhilesh", region: "mea" },
-                    { id: Date.now() + 6, name: "Sampoorna", region: "usa" },
-                    { id: Date.now() + 7, name: "Ahamed", region: "usa" },
-                    { id: Date.now() + 8, name: "Vaibhav", region: "usa" },
-                    { id: Date.now() + 9, name: "Debendra", region: "usa" }
-                ];
-                saveSalesData();
+        function defaultSalesPersons() {
+            return [
+                { id: Date.now() + 1, name: "Vidya", region: "india" },
+                { id: Date.now() + 2, name: "Yash", region: "india" },
+                { id: Date.now() + 3, name: "Sunil", region: "india" },
+                { id: Date.now() + 4, name: "Abhishek", region: "india" },
+                { id: Date.now() + 5, name: "Akhilesh", region: "mea" },
+                { id: Date.now() + 6, name: "Sampoorna", region: "usa" },
+                { id: Date.now() + 7, name: "Ahamed", region: "usa" },
+                { id: Date.now() + 8, name: "Vaibhav", region: "usa" },
+                { id: Date.now() + 9, name: "Debendra", region: "usa" }
+            ];
+        }
+
+        async function loadSalesData() {
+            try {
+                const result = await window.storage.get('salesPersons', true);
+                if (result && result.value) {
+                    salesPersons = JSON.parse(result.value);
+                } else {
+                    salesPersons = defaultSalesPersons();
+                    await saveSalesData();
+                }
+            } catch (e) {
+                salesPersons = defaultSalesPersons();
+                try { await saveSalesData(); } catch (e2) { console.error('Could not seed shared sales persons', e2); }
             }
             refreshSalesDropdown();
         }
 
-        function saveSalesData() {
-            localStorage.setItem('salesPersons', JSON.stringify(salesPersons));
+        async function saveSalesData() {
+            try {
+                const result = await window.storage.set('salesPersons', JSON.stringify(salesPersons), true);
+                if (!result) console.error('Sales save returned no result');
+            } catch (e) {
+                console.error('Failed to save sales persons to shared storage', e);
+                showToast('Could not sync sales list — check connection', false);
+            }
         }
 
         function refreshSalesDropdown() {
             const salesDropdown = document.getElementById('sales');
             if (!salesDropdown) return;
+            const previousValue = salesDropdown.value;
             let html = '<option value="">Select Sales Person</option>';
             salesPersons.forEach(p => {
                 const regionText = p.region === 'india' ? ' (India)' : (p.region === 'mea' ? ' (MEA)' : ' (USA)');
                 html += `<option value="${escapeHtml(p.name)}|${p.id}">${escapeHtml(p.name)}${regionText}</option>`;
             });
             salesDropdown.innerHTML = html;
+            // Preserve the current selection if it still exists (used by the live-refresh poller)
+            if (previousValue && [...salesDropdown.options].some(o => o.value === previousValue)) {
+                salesDropdown.value = previousValue;
+            }
         }
 
-        function addSalesPerson() {
-            const name = document.getElementById('newSalesName').value.trim();
-            const region = document.getElementById('newSalesRegion').value;
+        async function addSalesPerson() {
+            const nameInput = document.getElementById('newSalesName');
+            const regionInput = document.getElementById('newSalesRegion');
+            const addBtn = document.querySelector('#salesManagerBody .add-btn');
+            const name = nameInput.value.trim();
+            const region = regionInput.value;
             if (!name) {
                 showToast('Please enter name', false);
                 return;
             }
+            if (addBtn) addBtn.disabled = true;
             const newId = Date.now();
             salesPersons.push({ id: newId, name: name, region: region });
-            saveSalesData();
+            await saveSalesData();
             refreshSalesDropdown();
             renderSalesManagerContent();
-            document.getElementById('newSalesName').value = '';
             showToast(`${name} added successfully!`, true);
         }
 
-        function deleteSalesPerson(id) {
+        async function deleteSalesPerson(id) {
             const person = salesPersons.find(p => p.id === id);
             if (!person) return;
             if (confirm(`Delete "${person.name}"?`)) {
                 salesPersons = salesPersons.filter(p => p.id !== id);
-                saveSalesData();
+                await saveSalesData();
                 refreshSalesDropdown();
                 const salesDropdown = document.getElementById('sales');
                 const selectedVal = salesDropdown.value;
@@ -1368,7 +1436,8 @@
             `;
         }
 
-        function openSalesManager() {
+        async function openSalesManager() {
+            await loadSalesData(); // pull latest shared data before showing the manager
             renderSalesManagerContent();
             document.getElementById('salesManagerModal').style.display = 'flex';
         }
@@ -1380,7 +1449,8 @@
         // ============================================
         // COURSES MANAGER MODAL
         // ============================================
-        function openCoursesManager() {
+        async function openCoursesManager() {
+            await loadCourses(); // pull latest shared data before showing the manager
             renderCoursesManagerContent();
             document.getElementById('coursesManagerModal').style.display = 'flex';
         }
@@ -1400,7 +1470,7 @@
                     courseListHtml += `
                         <div class="course-row">
                             <div>${escapeHtml(course)}</div>
-                            <div><button class="delete-course-btn" onclick="deleteCourseFromManager('${escapeHtml(course)}')">Delete</button></div>
+                            <div><button class="delete-course-btn" onclick="deleteCourseFromManager('${escapeHtml(course).replace(/'/g, "\\'")}')">Delete</button></div>
                         </div>
                     `;
                 });
@@ -1445,7 +1515,7 @@
             }
         }
 
-        function addCourseFromManager() {
+        async function addCourseFromManager() {
             const input = document.getElementById('newCourseName');
             const name = input.value.trim();
             if (!name) {
@@ -1456,7 +1526,7 @@
                 showToast('Course already exists!', false);
                 return;
             }
-            addCourse(name);
+            await addCourse(name);
             input.value = '';
             const searchBox = document.getElementById('courseSearchFilter');
             const currentFilter = searchBox ? searchBox.value : '';
@@ -1464,13 +1534,53 @@
             showToast(`"${name}" added successfully!`, true);
         }
 
-        function deleteCourseFromManager(name) {
+        async function deleteCourseFromManager(name) {
             if (!confirm(`Delete course: "${name}"?`)) return;
-            deleteCourse(name);
+            await deleteCourse(name);
             const searchBox = document.getElementById('courseSearchFilter');
             const currentFilter = searchBox ? searchBox.value : '';
             renderCoursesManagerContent(currentFilter);
             showToast(`"${name}" deleted`, true);
+        }
+
+        // ============================================
+        // LIVE SYNC — poll shared storage so other users'
+        // course/sales-person edits show up automatically
+        // ============================================
+        function startLiveSync() {
+            setInterval(async () => {
+                // Don't refresh mid-edit inside the manager modals to avoid disrupting typing
+                const coursesModalOpen = document.getElementById('coursesManagerModal').style.display === 'flex';
+                const salesModalOpen = document.getElementById('salesManagerModal').style.display === 'flex';
+
+                try {
+                    const result = await window.storage.get('courses', true);
+                    if (result && result.value) {
+                        const latest = JSON.parse(result.value);
+                        if (JSON.stringify(latest) !== JSON.stringify(courses)) {
+                            courses = latest;
+                            renderCourseDropdown();
+                            filterCourses();
+                            if (coursesModalOpen) {
+                                const searchBox = document.getElementById('courseSearchFilter');
+                                renderCoursesManagerContent(searchBox ? searchBox.value : '');
+                            }
+                        }
+                    }
+                } catch (e) { /* ignore transient errors */ }
+
+                try {
+                    const result = await window.storage.get('salesPersons', true);
+                    if (result && result.value) {
+                        const latest = JSON.parse(result.value);
+                        if (JSON.stringify(latest) !== JSON.stringify(salesPersons)) {
+                            salesPersons = latest;
+                            refreshSalesDropdown();
+                            if (salesModalOpen) renderSalesManagerContent();
+                        }
+                    }
+                } catch (e) { /* ignore transient errors */ }
+            }, 15000); // every 15 seconds
         }
 
         // ============================================
@@ -1515,6 +1625,9 @@
                 });
             }
             container.innerHTML = `
+                <div style="background:#fff3cd; border-left:3px solid #ffc107; padding:10px; border-radius:6px; margin-bottom:15px; font-size:12px;">
+                    ℹ️ Visitor logs and copy count are tracked per-device (this browser only). Courses and Sales Persons are the shared, live lists.
+                </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
                     <div class="visitor-stats" style="margin-bottom:0;">
                         <div class="stat-card"><div class="stat-number">${totalVisitors}</div><div class="stat-label">Unique</div></div>
@@ -1771,16 +1884,19 @@
         // ============================================
         // INITIALIZATION
         // ============================================
-        loadCourses();
-        loadSalesData();
-        loadVisitorLogs();
-        loadTemplateCopyCount();
-        fetchAndLogIP();
-        setTimeout(() => {
-            if (document.getElementById('courseSearch').value.length) {
-                document.getElementById('clearCourseBtn').style.display = 'flex';
-            }
-        }, 100);
+        (async function init() {
+            await loadCourses();
+            await loadSalesData();
+            loadVisitorLogs();
+            loadTemplateCopyCount();
+            fetchAndLogIP();
+            startLiveSync();
+            setTimeout(() => {
+                if (document.getElementById('courseSearch').value.length) {
+                    document.getElementById('clearCourseBtn').style.display = 'flex';
+                }
+            }, 100);
+        })();
     </script>
     <script disable-devtool-auto src='https://cdn.jsdelivr.net/npm/disable-devtool'></script>
 </body>
