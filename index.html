@@ -222,6 +222,25 @@
             background: #eaf4ff;
         }
 
+
+        /* Short-name-first course list with no category headings */
+        .course-short {
+            display: block;
+            font-weight: 700;
+            color: #1d3557;
+            letter-spacing: 0.1px;
+        }
+        .course-full {
+            display: block;
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 3px;
+            line-height: 1.35;
+        }
+        .course-item.selected .course-short,
+        .course-item.selected .course-full { color: #ffffff; }
+        .course-item:hover:not(.selected) .course-short { color: #0078d4; }
+
         .course-item.selected {
             background: #0078d4;
             color: white;
@@ -812,7 +831,7 @@
 
                 <label>📚 Select Course</label>
                 <div class="course-input-wrapper">
-                    <input type="text" id="courseSearch" placeholder="Type course name (CSPO, PMP, etc.)" autocomplete="off" onclick="showDropdown()" onkeyup="handleCourseKeyUp(event)" oninput="handleInputChange()" onkeydown="handleKeyNavigation(event)">
+                    <input type="text" id="courseSearch" placeholder="Search PMP, SSM, RTE, course name..." autocomplete="off" onclick="showDropdown()" onkeyup="handleCourseKeyUp(event)" oninput="handleInputChange()" onkeydown="handleKeyNavigation(event)">
                     <button class="clear-course-btn" id="clearCourseBtn" onclick="clearCourseInput()" title="Clear course">×</button>
                 </div>
                 <div id="courseDropdown" class="course-dropdown"></div>
@@ -1233,6 +1252,7 @@
         function onComboCourseChange() {
             const value = document.getElementById('comboCourseSelect').value;
             if (!value) return;
+            selectedCourseFullName = value;
             document.getElementById('courseSearch').value = value;
             document.getElementById('clearCourseBtn').style.display = 'flex';
             autoGenerateTemplate();
@@ -1260,204 +1280,309 @@
             return stripTrademark(text).toLowerCase();
         }
 
-        // THE FULL COURSE LIST AS PROVIDED (including duplicates) — used only as first-time default
-        const DEFAULT_COURSES = [
-            "Certified ScrumMaster (CSM) Certification Training",
-            "Certified Scrum Product Owner (CSPO) Certification Training",
-            "Advanced Certified Scrum Master (A-CSM) Certification Training",
-            "Advanced Certified Scrum Product Owner (A-CSPO) Certification Training",
-            "Certified Scrum Developer (CSD) Certification Training",
-            "Agile and Scrum Training",
-            "PMI Agile Certified Practitioner (PMI-ACP) Certification Training",
-            "Professional Scrum Master (PSM I) Certification Training",
-            "Certified Agile Scaling Practitioner 1 (CASP 1) Training",
-            "Agile Coaching Skills - Certified Facilitator (CAF) Training",
-            "Professional Scrum Master Advanced (PSM A) Certification Training",
-            "Certified Agile Leader 1 (CAL 1) Certification Training",
-            "Advanced Certified Scrum Developer (A-CSD) Certification Training",
-            "ICAgile Certified Professional in Agile Coaching (ICP-ACC) Certification Training",
-            "Professional Scrum with Kanban (PSK) Certification Training",
-            "Professional Scrum Product Owner I (PSPO) Certification Training",
-            "Professional Scrum Developer (PSD) Certification Training",
-            "Certified Scrum Professional - ScrumMaster (CSP-SM) Certification Training",
-            "Certified Agile Leader 2 (CAL 2) Certification Training",
-            "Professional Scrum Product Owner (PSPO) - Advanced Course",
-            "ICAgile Coaching Agile Transformations (ICP-CAT) Certification Training",
-            "Professional Agile Leadership Essentials (PAL-E) Certification Training",
-            "Behaviour Driven Development (BDD) Training",
-            "Test Driven Development (TDD) Training",
-            "ICAgile Agility in the Enterprise (ICP-ENT) Certification Training",
-            "ICAgile(ICP) Fundamental Certification Training",
-            "Manage Agile Projects Using Scrum Training",
-            "Agile for Executives Training",
-            "Agile for Managers Training",
-            "Agile Product Owner Training",
-            "Applying Professional Scrum (APS) Certification Training",
-            "Agile Release Planning Training",
-            "Certified Scrum Professional - Product Owner (CSP-PO) Certification Training",
-            "Agile Project Management Training",
-            "Jira Software Training for Agile Projects",
-            "ICAgile Agile Leadership (ICP-LEA) Certification Course Training",
-            "ICAgile Product Management (ICP-PDM) Certification Training",
-            "ICAgile Agile Project & Delivery Management (ICP-APM) Training",
-            "Professional Scrum Product Backlog Management (PSPBM) Skills Certification Course",
-            "ICAgile Agile Product Ownership (ICP-APO) Certification Training",
-            "Applying Professional Kanban(APK) Course",
-            "ICAgile Agile Team Facilitation Certification (ICP-ATF) Training",
-            "ICAgile Foundations of AI (ICP-FAI) Certification Training",
-            "ICAgile Lean Portfolio Management (ICP-LPM) Certification Training",
-            "ICAgile People Development (ICP-PDV) Certification Training",
-            "ICAgile Systems Coaching (ICP-SYS) Certification Training",
-            "ICAgile Business Agility Foundations (ICP-BAF) Certification Training",
-            "Professional Scrum Master AI Essentials Certification Training",
-            "Professional Scrum Product Owner–AI Essentials (PSPO-AI Essentials) Certification Training",
-            "ICAgile Adaptive Org Design (ICP-ORG) Certification Training",
-            "AI-Empowered Leading SAFe (6.0) Training with SAFe Agilist Certification",
-            "AI-Empowered SAFe Scrum Master Certification Training",
-            "AI-Empowered SAFe Product Owner/Product Manager (POPM) Certification Training",
-            "AI-Empowered SAFe 6.0 Advanced Scrum Master (SASM) Certification Training",
-            "AI-Empowered SAFe 6.0 Release Train Engineer (RTE) Certification Training",
-            "AI-Empowered SAFe 6.0 Practice Consultant (SPC) Certification Training",
-            "SAFe 6.0 Lean Portfolio Management (LPM) Certification Training",
-            "SAFe 6.0 Agile Product Management (APM) Certification Training",
-            "AI-Empowered Advanced SAFe Practice Consultant (ASPC) Certification Path",
-            "AI-Empowered SAFe 6.0 for Teams Certification Training",
-            "SAFe 6.0 Architects Certification Training",
-            "SAFe 6.0 DevOps Certification Training",
-            "SAFe 6.0 Agile Software Engineering Certification Training",
-            "Advanced Facilitator: Value Stream Mapping Micro-Credential Course",
-            "Achieving Responsible AI with SAFe Micro-credential Course",
-            "AI-Empowered Leading SAFe 6.0 for Government Certification Training",
-            "Agile HR Explorer (AHRE) Training and Certification",
-            "Advanced Scrum Master Certification Path",
-            "Advanced Facilitator: Conflict & Collaboration Micro-Credential Course",
-            "SAFe for Hardware Certification Training",
-            "AI-Native Foundations Certification Training Course",
-            "AI-Native Change Agent Certification Training Course",
-            "Project Management Professional (PMP) Certification Training",
-            "PRINCE2 Foundation and Practitioner Certification Training",
-            "PRINCE2 Foundation Certification Training",
-            "PRINCE2 Practitioner Certification Training",
-            "Certified Associate in Project Management (CAPM) Certification Training",
-            "PRINCE2 Agile Foundation Certification Training",
-            "Primavera P6 v 20.12 Certification Training",
-            "PRINCE2 Agile Practitioner Certification Training",
-            "PRINCE2 Agile Foundation and Practitioner Certification Training",
-            "Program Management Professional (PgMP) Certification Training",
-            "Project Management Fundamental Training",
-            "Portfolio Management Professional (PfMP) Certification Training",
-            "Disciplined Agile Foundations (DAF) Training",
-            "PMI-CPMAI Certification Training",
-            "Primavera P6 Professional Fundamentals Certification Training",
-            "Project Management Techniques Training",
-            "PMI Scheduling Professional Certification Training",
-            "PMI Construction Professional Certification Training Course",
-            "Business Case Writing Training",
-            "Conflict Management Training",
-            "Certified Business Analysis Professional (CBAP) Certification Training",
-            "Change Management Training",
-            "Certification of Capability in Business Analysis (CCBA) Training",
-            "Entry Certificate in Business Analysis (ECBA) Certification Training",
-            "Agile Analysis Certification (IIBA-AAC) Training",
-            "Generative AI for Business & IT Leaders & Managers Training",
-            "Generative AI for Business Analysts & Functional IT Consultants Training",
-            "Cloud Fundamentals for Business Managers & Product Managers Training",
-            "Generative AI Architect - Advanced Program Training",
-            "Introduction to Generative AI Training",
-            "Generative AI for Agile Leaders Training",
-            "Generative AI for Scrum Masters Training",
-            "Generative AI in HR Certification Course",
-            "Generative AI for Software Developers Course",
-            "Generative AI for Project Managers Training",
-            "Prompt Engineering Course",
-            "Generative AI for Product Owners-Product Managers Certification Training",
-            "Mastering Generative AI Tools Online",
-            "Agentic AI Foundation Training Course",
-            "Agentic AI Practitioner Training Course",
-            "Claude Certified Architect – Foundations (CCA-F) Training Course",
-            "AI For CXOs Workshop",
-            "Agentic AI Engineering with Anthropic Claude Technologies Training Course",
-            "Forward Deployed Architect Program",
-            "AI-Native Development Using BDD Training",
-            "Agentic AI with Azure AI Foundry Program",
-            "Agentic AI for Software Testers Workshop",
-            "Artificial Intelligence Governance Professional Training",
-            "Agentic AI Engineering Workshop",
-            "Production Grade AI Applications & SDLC Automation with OpenAI Technologies Workshop",
-            "Agentic AI with AWS Bedrock Workshop",
-            "AI Engineering with GCP Vertex AI Workshop",
-            "Agentic and Generative AI Workshop for IT Services Business Leaders & Managers",
-            "Forward Deployed Engineering Program",
-            "Business Productivity & Automation with Agentic AI Workshop",
-            "Agentic AI for Business Transformation Workshop",
-            "AI for Software Architects Certification",
-            "Agile Objectives and Key Results (Agile OKRs) MicroCredential Training",
-            "AI for Scrum Masters Micro-credential Course",
-            "AI for Product Owners Micro-credential Training",
-            "Scrum Essentials",
-            "Conflict Management Skills Course",
-            "Scrum Better with Kanban (SBK) Micro-credential Training",
-            "ICAgile AI for Product Planning Micro-credential Course Training",
-            "ICAgile AI for Product Metrics Micro Credential Course Training",
-            "ICAgile AI for Stakeholder Management Micro Credential Course Certification Training",
-            "ICAgile AI for Product Discovery Micro Credential Course Training",
-            "ICAgile AI for Product Strategy Micro-Credential Course",
-            "ICAgile AI for Customer Insights Micro-credential Training",
-            "UX and Design for Agile Teams Micro-credential Course",
-            "Agile Coaching Skills Micro-credential Training",
-            "Applied Agentic AI Certification Training Course",
-            "Data Science With Python Training",
-            "Python Django (PD) Training",
-            "Introduction to Artificial Intelligence and Machine Learning (AI and ML) Training",
-            "Artificial Intelligence (AI) Training",
-            "Data Science Training",
-            "Extreme Programming Practitioner Training",
-            "Certified Artificial Intelligence For Agile Leaders Training",
-            "Lean Six Sigma Black Belt Certification Training",
-            "Lean Six Sigma Green Belt Training",
-            "Lean Six Sigma Yellow Belt Training",
-            "Lean Six Sigma Yellow Belt Training - 4 Hours Crash Course",
-            "Root Cause Analysis (RCA) Training",
-            "ISO-IEC 42001: 2023 Lead Implementer Certification Training",
-            "AI-Augmented Lean Six Sigma Master Certification Program",
-            "DevOps Foundation Certification Training",
-            "Docker and Kubernetes Training",
-            "DevSecOps Foundation Certification Training",
-            "Angular JS Training",
-            "React Native Training",
-            "React JS Training",
-            "Python for Beginners Training",
-            "UX Design Training",
-            "ITIL 4 Foundation Certification Training",
-            "ITIL 5 Foundation Certification Training",
-            "AWS SysOps Administrator Certification Training",
-            "AWS DevOps Engineer Certification Training",
-            "AWS Cloud Practitioner Certification Training",
-            "AWS Certified Solutions Architect Professional Certification Training",
-            "Cloud Computing with AWS Training",
-            "Python Programming Training",
-            "PCI DSS Training",
-            "Microsoft AZ-400: Designing and Implementing Microsoft DevOps Solutions Training",
-            "Microsoft Power BI Training",
-            "Microsoft Azure Fundamentals AZ-900 Certification Training",
-            "AZ-104 Microsoft Azure Administrator Training",
-            "Microsoft Azure Developer Associate (AZ-204) Certification Course",
-            "Certified Information Systems Security Professional (CISSP) Training",
-            "Microsoft Certified Azure Solutions Architect Expert (AZ-305) Certification Training"
+        // Official-course full names plus readable search/display abbreviations.
+        // All 183 courses appear in one list; there are no category headings.
+        // Some short labels are convenient search aliases, not certificate titles.
+        const COURSE_CATALOG = [
+  { short: "CSM", name: "Certified ScrumMaster (CSM) Certification Training" },
+  { short: "CSPO", name: "Certified Scrum Product Owner (CSPO) Certification Training" },
+  { short: "A-CSM", name: "Advanced Certified Scrum Master (A-CSM) Certification Training" },
+  { short: "A-CSPO", name: "Advanced Certified Scrum Product Owner (A-CSPO) Certification Training" },
+  { short: "CSD", name: "Certified Scrum Developer (CSD) Certification Training" },
+  { short: "Agile & Scrum", name: "Agile and Scrum Training" },
+  { short: "PMI-ACP", name: "PMI Agile Certified Practitioner (PMI-ACP) Certification Training" },
+  { short: "PSM I", name: "Professional Scrum Master (PSM I) Certification Training" },
+  { short: "CASP 1", name: "Certified Agile Scaling Practitioner 1 (CASP 1) Training" },
+  { short: "CAF", name: "Agile Coaching Skills - Certified Facilitator (CAF) Training" },
+  { short: "PSM-A", name: "Professional Scrum Master Advanced (PSM A) Certification Training", aliases: ["PSM II", "PSM 2", "Professional Scrum Master Advanced"] },
+  { short: "CAL 1", name: "Certified Agile Leader 1 (CAL 1) Certification Training" },
+  { short: "A-CSD", name: "Advanced Certified Scrum Developer (A-CSD) Certification Training" },
+  { short: "ICP-ACC", name: "ICAgile Certified Professional in Agile Coaching (ICP-ACC) Certification Training" },
+  { short: "PSK", name: "Professional Scrum with Kanban (PSK) Certification Training" },
+  { short: "PSPO I", name: "Professional Scrum Product Owner I (PSPO) Certification Training", aliases: ["PSPO", "Professional Scrum Product Owner I"] },
+  { short: "PSD", name: "Professional Scrum Developer (PSD) Certification Training" },
+  { short: "CSP-SM", name: "Certified Scrum Professional - ScrumMaster (CSP-SM) Certification Training" },
+  { short: "CAL 2", name: "Certified Agile Leader 2 (CAL 2) Certification Training" },
+  { short: "PSPO-A", name: "Professional Scrum Product Owner (PSPO) - Advanced Course", aliases: ["PSPO II", "PSPO Advanced"] },
+  { short: "ICP-CAT", name: "ICAgile Coaching Agile Transformations (ICP-CAT) Certification Training" },
+  { short: "PAL-E", name: "Professional Agile Leadership Essentials (PAL-E) Certification Training" },
+  { short: "BDD", name: "Behaviour Driven Development (BDD) Training" },
+  { short: "TDD", name: "Test Driven Development (TDD) Training" },
+  { short: "ICP-ENT", name: "ICAgile Agility in the Enterprise (ICP-ENT) Certification Training" },
+  { short: "ICP", name: "ICAgile(ICP) Fundamental Certification Training", aliases: ["ICAgile Fundamentals"] },
+  { short: "Scrum Project Mgmt", name: "Manage Agile Projects Using Scrum Training" },
+  { short: "Agile for Executives", name: "Agile for Executives Training" },
+  { short: "Agile for Managers", name: "Agile for Managers Training" },
+  { short: "Agile Product Owner", name: "Agile Product Owner Training" },
+  { short: "APS", name: "Applying Professional Scrum (APS) Certification Training" },
+  { short: "Agile Release Planning", name: "Agile Release Planning Training" },
+  { short: "CSP-PO", name: "Certified Scrum Professional - Product Owner (CSP-PO) Certification Training" },
+  { short: "Agile PM", name: "Agile Project Management Training" },
+  { short: "Jira Agile", name: "Jira Software Training for Agile Projects" },
+  { short: "ICP-LEA", name: "ICAgile Agile Leadership (ICP-LEA) Certification Course Training" },
+  { short: "ICP-PDM", name: "ICAgile Product Management (ICP-PDM) Certification Training" },
+  { short: "ICP-APM", name: "ICAgile Agile Project & Delivery Management (ICP-APM) Training", aliases: ["ICAgile Agile Project Delivery Management"] },
+  { short: "PSPBM", name: "Professional Scrum Product Backlog Management (PSPBM) Skills Certification Course" },
+  { short: "ICP-APO", name: "ICAgile Agile Product Ownership (ICP-APO) Certification Training" },
+  { short: "APK", name: "Applying Professional Kanban(APK) Course" },
+  { short: "ICP-ATF", name: "ICAgile Agile Team Facilitation Certification (ICP-ATF) Training" },
+  { short: "ICP-FAI", name: "ICAgile Foundations of AI (ICP-FAI) Certification Training" },
+  { short: "ICP-LPM", name: "ICAgile Lean Portfolio Management (ICP-LPM) Certification Training", aliases: ["ICAgile Lean Portfolio Management"] },
+  { short: "ICP-PDV", name: "ICAgile People Development (ICP-PDV) Certification Training" },
+  { short: "ICP-SYS", name: "ICAgile Systems Coaching (ICP-SYS) Certification Training" },
+  { short: "ICP-BAF", name: "ICAgile Business Agility Foundations (ICP-BAF) Certification Training" },
+  { short: "PSM-AI", name: "Professional Scrum Master AI Essentials Certification Training" },
+  { short: "PSPO-AI", name: "Professional Scrum Product Owner–AI Essentials (PSPO-AI Essentials) Certification Training" },
+  { short: "ICP-ORG", name: "ICAgile Adaptive Org Design (ICP-ORG) Certification Training" },
+  { short: "SA", name: "AI-Empowered Leading SAFe (6.0) Training with SAFe Agilist Certification", aliases: ["Leading SAFe", "SAFe Agilist"] },
+  { short: "SSM", name: "AI-Empowered SAFe Scrum Master Certification Training", aliases: ["SAFe Scrum Master", "AI-SSM"] },
+  { short: "POPM", name: "AI-Empowered SAFe Product Owner/Product Manager (POPM) Certification Training", aliases: ["SAFe POPM", "Product Owner Product Manager"] },
+  { short: "SASM", name: "AI-Empowered SAFe 6.0 Advanced Scrum Master (SASM) Certification Training", aliases: ["SAFe Advanced Scrum Master"] },
+  { short: "RTE", name: "AI-Empowered SAFe 6.0 Release Train Engineer (RTE) Certification Training", aliases: ["SAFe RTE", "Release Train Engineer"] },
+  { short: "SPC", name: "AI-Empowered SAFe 6.0 Practice Consultant (SPC) Certification Training", aliases: ["SAFe Practice Consultant"] },
+  { short: "SAFe LPM", name: "SAFe 6.0 Lean Portfolio Management (LPM) Certification Training", aliases: ["LPM", "Lean Portfolio Management"] },
+  { short: "SAFe APM", name: "SAFe 6.0 Agile Product Management (APM) Certification Training", aliases: ["APM", "Agile Product Management"] },
+  { short: "ASPC", name: "AI-Empowered Advanced SAFe Practice Consultant (ASPC) Certification Path" },
+  { short: "SP", name: "AI-Empowered SAFe 6.0 for Teams Certification Training", aliases: ["SAFe for Teams", "SAFe Practitioner"] },
+  { short: "ARCH", name: "SAFe 6.0 Architects Certification Training", aliases: ["SAFe Architects"] },
+  { short: "SDP", name: "SAFe 6.0 DevOps Certification Training", aliases: ["SAFe DevOps Practitioner", "SAFe DevOps"] },
+  { short: "ASE", name: "SAFe 6.0 Agile Software Engineering Certification Training", aliases: ["SAFe Agile Software Engineering"] },
+  { short: "Value Stream Mapping", name: "Advanced Facilitator: Value Stream Mapping Micro-Credential Course" },
+  { short: "Responsible AI SAFe", name: "Achieving Responsible AI with SAFe Micro-credential Course" },
+  { short: "SAFe Government", name: "AI-Empowered Leading SAFe 6.0 for Government Certification Training" },
+  { short: "AHRE", name: "Agile HR Explorer (AHRE) Training and Certification" },
+  { short: "ASM Path", name: "Advanced Scrum Master Certification Path" },
+  { short: "Conflict & Collaboration", name: "Advanced Facilitator: Conflict & Collaboration Micro-Credential Course" },
+  { short: "SAFe Hardware", name: "SAFe for Hardware Certification Training" },
+  { short: "AI-Native Foundations", name: "AI-Native Foundations Certification Training Course" },
+  { short: "AI-Native Change Agent", name: "AI-Native Change Agent Certification Training Course" },
+  { short: "PMP", name: "Project Management Professional (PMP) Certification Training", aliases: ["Project Management Professional"] },
+  { short: "PRINCE2 F&P", name: "PRINCE2 Foundation and Practitioner Certification Training" },
+  { short: "PRINCE2 Foundation", name: "PRINCE2 Foundation Certification Training" },
+  { short: "PRINCE2 Practitioner", name: "PRINCE2 Practitioner Certification Training" },
+  { short: "CAPM", name: "Certified Associate in Project Management (CAPM) Certification Training", aliases: ["Certified Associate in Project Management"] },
+  { short: "PRINCE2 Agile Foundation", name: "PRINCE2 Agile Foundation Certification Training" },
+  { short: "Primavera P6 20.12", name: "Primavera P6 v 20.12 Certification Training" },
+  { short: "PRINCE2 Agile Practitioner", name: "PRINCE2 Agile Practitioner Certification Training" },
+  { short: "PRINCE2 Agile F&P", name: "PRINCE2 Agile Foundation and Practitioner Certification Training" },
+  { short: "PgMP", name: "Program Management Professional (PgMP) Certification Training", aliases: ["Program Management Professional"] },
+  { short: "PM Fundamentals", name: "Project Management Fundamental Training" },
+  { short: "PfMP", name: "Portfolio Management Professional (PfMP) Certification Training", aliases: ["Portfolio Management Professional"] },
+  { short: "DAF", name: "Disciplined Agile Foundations (DAF) Training" },
+  { short: "PMI-CPMAI", name: "PMI-CPMAI Certification Training" },
+  { short: "Primavera P6 Fundamentals", name: "Primavera P6 Professional Fundamentals Certification Training" },
+  { short: "PM Techniques", name: "Project Management Techniques Training" },
+  { short: "PMI-SP", name: "PMI Scheduling Professional Certification Training", aliases: ["PMI Scheduling Professional"] },
+  { short: "PMI-CP", name: "PMI Construction Professional Certification Training Course", aliases: ["PMI Construction Professional"] },
+  { short: "Business Case Writing", name: "Business Case Writing Training" },
+  { short: "Conflict Management", name: "Conflict Management Training" },
+  { short: "CBAP", name: "Certified Business Analysis Professional (CBAP) Certification Training" },
+  { short: "Change Management", name: "Change Management Training" },
+  { short: "CCBA", name: "Certification of Capability in Business Analysis (CCBA) Training" },
+  { short: "ECBA", name: "Entry Certificate in Business Analysis (ECBA) Certification Training" },
+  { short: "IIBA-AAC", name: "Agile Analysis Certification (IIBA-AAC) Training" },
+  { short: "GenAI Business Leaders", name: "Generative AI for Business & IT Leaders & Managers Training" },
+  { short: "GenAI Business Analysts", name: "Generative AI for Business Analysts & Functional IT Consultants Training" },
+  { short: "Cloud Fundamentals Managers", name: "Cloud Fundamentals for Business Managers & Product Managers Training" },
+  { short: "GenAI Architect Advanced", name: "Generative AI Architect - Advanced Program Training" },
+  { short: "GenAI Intro", name: "Introduction to Generative AI Training" },
+  { short: "GenAI Agile Leaders", name: "Generative AI for Agile Leaders Training" },
+  { short: "GenAI Scrum Masters", name: "Generative AI for Scrum Masters Training" },
+  { short: "GenAI HR", name: "Generative AI in HR Certification Course" },
+  { short: "GenAI Developers", name: "Generative AI for Software Developers Course" },
+  { short: "GenAI Project Managers", name: "Generative AI for Project Managers Training" },
+  { short: "Prompt Engineering", name: "Prompt Engineering Course" },
+  { short: "GenAI PO/PM", name: "Generative AI for Product Owners-Product Managers Certification Training" },
+  { short: "GenAI Tools", name: "Mastering Generative AI Tools Online" },
+  { short: "Agentic AI Foundation", name: "Agentic AI Foundation Training Course" },
+  { short: "Agentic AI Practitioner", name: "Agentic AI Practitioner Training Course" },
+  { short: "CCA-F", name: "Claude Certified Architect – Foundations (CCA-F) Training Course" },
+  { short: "AI for CXOs", name: "AI For CXOs Workshop" },
+  { short: "Agentic AI Claude", name: "Agentic AI Engineering with Anthropic Claude Technologies Training Course" },
+  { short: "Forward Deployed Architect", name: "Forward Deployed Architect Program" },
+  { short: "AI-Native BDD", name: "AI-Native Development Using BDD Training" },
+  { short: "Agentic AI Azure", name: "Agentic AI with Azure AI Foundry Program" },
+  { short: "Agentic AI Testers", name: "Agentic AI for Software Testers Workshop" },
+  { short: "AIGP", name: "Artificial Intelligence Governance Professional Training", aliases: ["AI Governance Professional"] },
+  { short: "Agentic AI Engineering", name: "Agentic AI Engineering Workshop" },
+  { short: "OpenAI SDLC Automation", name: "Production Grade AI Applications & SDLC Automation with OpenAI Technologies Workshop" },
+  { short: "Agentic AI AWS Bedrock", name: "Agentic AI with AWS Bedrock Workshop" },
+  { short: "AI GCP Vertex", name: "AI Engineering with GCP Vertex AI Workshop" },
+  { short: "Agentic & GenAI IT Leaders", name: "Agentic and Generative AI Workshop for IT Services Business Leaders & Managers" },
+  { short: "Forward Deployed Engineer", name: "Forward Deployed Engineering Program" },
+  { short: "Agentic AI Productivity", name: "Business Productivity & Automation with Agentic AI Workshop" },
+  { short: "Agentic AI Business Transformation", name: "Agentic AI for Business Transformation Workshop" },
+  { short: "Agentic SDE", name: "Agentic Software Development Engineer Program", aliases: ["Agentic Software Development Engineer"], new: true, url: "https://www.simpliaxis.com/agentic-software-development-engineer-course" },
+  { short: "AI Software Architects", name: "AI for Software Architects Certification" },
+  { short: "Agile OKRs", name: "Agile Objectives and Key Results (Agile OKRs) MicroCredential Training" },
+  { short: "AI Scrum Masters", name: "AI for Scrum Masters Micro-credential Course" },
+  { short: "AI Product Owners", name: "AI for Product Owners Micro-credential Training" },
+  { short: "Scrum Essentials", name: "Scrum Essentials" },
+  { short: "Conflict Skills", name: "Conflict Management Skills Course" },
+  { short: "SBK", name: "Scrum Better with Kanban (SBK) Micro-credential Training" },
+  { short: "AI Product Planning", name: "ICAgile AI for Product Planning Micro-credential Course Training" },
+  { short: "AI Product Metrics", name: "ICAgile AI for Product Metrics Micro Credential Course Training" },
+  { short: "AI Stakeholder Management", name: "ICAgile AI for Stakeholder Management Micro Credential Course Certification Training" },
+  { short: "AI Product Discovery", name: "ICAgile AI for Product Discovery Micro Credential Course Training" },
+  { short: "AI Product Strategy", name: "ICAgile AI for Product Strategy Micro-Credential Course" },
+  { short: "AI Customer Insights", name: "ICAgile AI for Customer Insights Micro-credential Training" },
+  { short: "UX Agile Teams", name: "UX and Design for Agile Teams Micro-credential Course" },
+  { short: "Agile Coaching Skills", name: "Agile Coaching Skills Micro-credential Training" },
+  { short: "Applied Agentic AI", name: "Applied Agentic AI Certification Training Course" },
+  { short: "Data Science Python", name: "Data Science With Python Training" },
+  { short: "Python Django", name: "Python Django (PD) Training" },
+  { short: "AI & ML Intro", name: "Introduction to Artificial Intelligence and Machine Learning (AI and ML) Training" },
+  { short: "AI Training", name: "Artificial Intelligence (AI) Training" },
+  { short: "Data Science", name: "Data Science Training" },
+  { short: "XP Practitioner", name: "Extreme Programming Practitioner Training" },
+  { short: "AI Agile Leaders", name: "Certified Artificial Intelligence For Agile Leaders Training" },
+  { short: "LSSBB", name: "Lean Six Sigma Black Belt Certification Training", aliases: ["SSBB", "Six Sigma Black Belt", "Lean Six Sigma Black Belt"] },
+  { short: "LSSGB", name: "Lean Six Sigma Green Belt Training", aliases: ["SSGB", "Six Sigma Green Belt", "Lean Six Sigma Green Belt"] },
+  { short: "LSSYB", name: "Lean Six Sigma Yellow Belt Training", aliases: ["SSYB", "Six Sigma Yellow Belt"] },
+  { short: "LSSYB Crash Course", name: "Lean Six Sigma Yellow Belt Training - 4 Hours Crash Course" },
+  { short: "RCA", name: "Root Cause Analysis (RCA) Training" },
+  { short: "ISO 42001 Lead Implementer", name: "ISO-IEC 42001: 2023 Lead Implementer Certification Training" },
+  { short: "AI LSS Master", name: "AI-Augmented Lean Six Sigma Master Certification Program" },
+  { short: "DevOps Foundation", name: "DevOps Foundation Certification Training" },
+  { short: "Docker & Kubernetes", name: "Docker and Kubernetes Training" },
+  { short: "DevSecOps Foundation", name: "DevSecOps Foundation Certification Training" },
+  { short: "AngularJS", name: "Angular JS Training" },
+  { short: "React Native", name: "React Native Training" },
+  { short: "ReactJS", name: "React JS Training" },
+  { short: "Python Beginners", name: "Python for Beginners Training" },
+  { short: "UX Design", name: "UX Design Training" },
+  { short: "ITIL 4", name: "ITIL 4 Foundation Certification Training", aliases: ["ITIL 4 Foundation"] },
+  { short: "ITIL 5", name: "ITIL 5 Foundation Certification Training", aliases: ["ITIL 5 Foundation"] },
+  { short: "AWS SysOps", name: "AWS SysOps Administrator Certification Training" },
+  { short: "AWS DevOps Engineer", name: "AWS DevOps Engineer Certification Training" },
+  { short: "AWS Cloud Practitioner", name: "AWS Cloud Practitioner Certification Training" },
+  { short: "AWS SA Pro", name: "AWS Certified Solutions Architect Professional Certification Training", aliases: ["AWS Solutions Architect Professional"] },
+  { short: "AWS Cloud Computing", name: "Cloud Computing with AWS Training" },
+  { short: "Python Programming", name: "Python Programming Training" },
+  { short: "PCI DSS", name: "PCI DSS Training" },
+  { short: "AZ-400", name: "Microsoft AZ-400: Designing and Implementing Microsoft DevOps Solutions Training" },
+  { short: "Power BI", name: "Microsoft Power BI Training" },
+  { short: "AZ-900", name: "Microsoft Azure Fundamentals AZ-900 Certification Training" },
+  { short: "AZ-104", name: "AZ-104 Microsoft Azure Administrator Training" },
+  { short: "AZ-204", name: "Microsoft Azure Developer Associate (AZ-204) Certification Course" },
+  { short: "CISSP", name: "Certified Information Systems Security Professional (CISSP) Training" },
+  { short: "AZ-305", name: "Microsoft Certified Azure Solutions Architect Expert (AZ-305) Certification Training" },
         ];
+        const DEFAULT_COURSES = COURSE_CATALOG.map(course => course.name);
+        const CATALOG_BY_NAME = new Map(
+            COURSE_CATALOG.map(course => [courseDedupeKey(course.name), course])
+        );
+        const NEW_CATALOG_COURSE = "Agentic Software Development Engineer Program";
+        const COURSE_CATALOG_VERSION = "simpliaxis-short-labels-2026-11-19-v1";
+        let selectedCourseFullName = "";
 
-        // Load courses from SHARED storage (same list for every visitor on this link)
+        function courseMetadata(name) {
+            return CATALOG_BY_NAME.get(courseDedupeKey(name)) || null;
+        }
+
+        function normalizeCourseSearch(value) {
+            return stripTrademark(String(value || ""))
+                .toLowerCase().replace(/[–—]/g, "-")
+                .replace(/[^a-z0-9]+/g, " ").trim();
+        }
+
+        function courseShortLabel(name) {
+            const meta = courseMetadata(name);
+            return meta ? meta.short : name;
+        }
+
+        // Show the correct shorthand in the GENERATED EMAIL as well as in search.
+        // The shared courses array keeps its original full names, so this is a
+        // display-only change and never rewrites saved courses or combo records.
+        function formatCourseForEmail(rawName) {
+            const fullName = stripTrademark(String(rawName || ""));
+            const meta = courseMetadata(fullName);
+            if (!meta || !meta.short) return fullName; // manual/custom/combos unchanged
+
+            const short = stripTrademark(meta.short);
+            // Two Scrum.org labels in the source use the base (PSPO) code.
+            // Upgrade the existing code, rather than writing two codes side by side.
+            if (short === "PSPO I" && /\(PSPO\)/i.test(fullName)) {
+                return fullName.replace(/\(PSPO\)/i, "(PSPO I)");
+            }
+            if (short === "PSPO-A" && /\(PSPO\)/i.test(fullName)) {
+                return fullName.replace(/\(PSPO\)/i, "(PSPO-A)");
+            }
+            // The 4-hour Yellow Belt session is still the LSSYB course.
+            if (short === "LSSYB Crash Course" && /Yellow Belt Training/i.test(fullName)) {
+                return fullName.replace(/Yellow Belt Training/i, "Yellow Belt (LSSYB) Training");
+            }
+            const normalizeForComparison = value => normalizeCourseSearch(value)
+                .replace(/\band\b/g, " ").replace(/\bfor\b/g, " ")
+                .replace(/\s+/g, " ").trim();
+            const normShort = normalizeForComparison(short);
+            const normName = normalizeForComparison(fullName);
+            // Avoid redundant display aliases for spelling/spacing variations.
+            if (short === "AI & ML Intro" && /\(AI and ML\)/i.test(fullName)) return fullName;
+            if (short === "Primavera P6 20.12" && /Primavera P6 v 20\.12/i.test(fullName)) return fullName;
+            if (["AngularJS", "ReactJS"].includes(short)) return fullName;
+            if (!normShort || normName === normShort ||
+                (` ${normName} `).includes(` ${normShort} `)) return fullName;
+
+            // A parenthesized code in the original name takes precedence.
+            // Handles "PSM-A" vs "(PSM A)" and "SAFe LPM" vs "(LPM)".
+            const codesInName = [...fullName.matchAll(/\(([^)]+)\)/g)]
+                .map(match => normalizeForComparison(match[1]));
+            const normalizedCodeVariants = [normShort];
+            if (/^SAFe\s+/i.test(short)) {
+                normalizedCodeVariants.push(normalizeForComparison(short.replace(/^SAFe\s+/i, "")));
+            }
+            if (codesInName.some(code => normalizedCodeVariants.includes(code))) return fullName;
+
+            // Insert abbreviation alongside the course title, before Training /
+            // Certification Training when present. Keep the entire course title.
+            const end = /(\s+(?:Certification Course Training|Certification Training|Certification Course|Certification Path|Training Course|Training|Course|Program|Workshop))$/i;
+            if (end.test(fullName)) {
+                return fullName.replace(end, ` (${short})$1`);
+            }
+            return `${fullName} (${short})`;
+        }
+
+        function matchingCourseFullName(label) {
+            const query = normalizeCourseSearch(label);
+            if (!query) return "";
+            const matches = courses.filter(name => {
+                const meta = courseMetadata(name);
+                return [name, ...(meta ? [meta.short, ...(meta.aliases || [])] : [])]
+                    .some(term => normalizeCourseSearch(term) === query);
+            });
+            return matches.length === 1 ? matches[0] : "";
+        }
+
+
+        // Shared storage continues to hold full course titles, not short labels.
+        // Existing customizations and deletions are preserved. One-time migration
+        // adds the newly identified course to pre-existing course lists.
         async function loadCourses() {
             try {
                 const result = await sharedStorage.get('courses');
                 if (result && result.value) {
-                    courses = JSON.parse(result.value);
+                    const parsed = JSON.parse(result.value);
+                    courses = Array.isArray(parsed) ? parsed : [...DEFAULT_COURSES];
+                    try {
+                        const version = await sharedStorage.get('courseCatalogVersion');
+                        if (!version || version.value !== COURSE_CATALOG_VERSION) {
+                            if (!courses.some(name => courseDedupeKey(name) === courseDedupeKey(NEW_CATALOG_COURSE))) {
+                                courses.push(NEW_CATALOG_COURSE);
+                                courses.sort((a, b) => a.localeCompare(b));
+                                await saveCourses();
+                            }
+                            await sharedStorage.set('courseCatalogVersion', COURSE_CATALOG_VERSION);
+                        }
+                    } catch (migrationError) {
+                        console.warn('Course catalog migration could not sync', migrationError);
+                    }
                 } else {
                     courses = [...DEFAULT_COURSES];
                     await saveCourses();
+                    await sharedStorage.set('courseCatalogVersion', COURSE_CATALOG_VERSION);
                 }
             } catch (e) {
-                // Backend unreachable (first ever run, or the Function isn't deployed) — fall back locally
                 console.error('Could not load shared courses', e);
                 if (courses.length === 0) courses = [...DEFAULT_COURSES];
             }
@@ -1483,24 +1608,25 @@
         function renderCourseDropdown() {
             const dd = document.getElementById('courseDropdown');
             if (!dd) return;
-            // Select Course now shows ONLY the manually-managed course list
-            // (the pasted courses file) — auto-synced SimpliAxis courses are
-            // no longer merged in here, so no unwanted courses show up.
-            // Still deduped case-insensitively (and with ® / ™ stripped) on a
-            // normalized key, so "PMP®", "pmp", "PMP " etc. collapse to one entry.
-            const seen = new Map(); // dedupeKey -> display text
-            [...courses].forEach(raw => {
-                const clean = stripTrademark(raw);
-                if (!clean) return;
-                const key = courseDedupeKey(clean);
-                if (!seen.has(key)) seen.set(key, clean);
+            const seen = new Map();
+            courses.forEach(raw => {
+                const full = stripTrademark(raw);
+                if (full && !seen.has(courseDedupeKey(full))) seen.set(courseDedupeKey(full), full);
             });
-            const merged = Array.from(seen.values()).sort((a, b) => a.localeCompare(b));
-            let html = '';
-            merged.forEach(course => {
-                html += `<div class="course-item" onclick="selectCourse(this)">${escapeHtml(course)}</div>`;
-            });
-            dd.innerHTML = html;
+            const alphabetized = [...seen.values()].sort((a, b) =>
+                courseShortLabel(a).localeCompare(courseShortLabel(b), undefined, { numeric: true })
+            );
+            dd.innerHTML = alphabetized.map(full => {
+                const short = courseShortLabel(full);
+                const meta = courseMetadata(full);
+                const searchTerms = [full, short, ...(meta ? (meta.aliases || []) : [])]
+                    .map(normalizeCourseSearch).join(' ');
+                return `<div class="course-item" data-course="${escapeHtml(full)}" ` +
+                    `data-search="${escapeHtml(searchTerms)}" onclick="selectCourse(this)">` +
+                    `<span class="course-short">${escapeHtml(short)}</span>` +
+                    (short === full ? '' : `<span class="course-full">${escapeHtml(full)}</span>`) +
+                    `</div>`;
+            }).join('');
         }
 
         async function addCourse(name) {
@@ -1713,7 +1839,12 @@
 
         function renderCoursesManagerContent(filterText = '') {
             const container = document.getElementById('coursesManagerBody');
-            const filtered = filterText ? courses.filter(c => c.toLowerCase().includes(filterText.toLowerCase())) : courses;
+            const filter = normalizeCourseSearch(filterText);
+            const filtered = filter ? courses.filter(c => {
+                const meta = courseMetadata(c);
+                return [c, ...(meta ? [meta.short, ...(meta.aliases || [])] : [])]
+                    .some(value => normalizeCourseSearch(value).includes(filter));
+            }) : courses;
             let courseListHtml = '';
             if (filtered.length === 0) {
                 courseListHtml = '<div class="no-courses-msg">No courses found</div>';
@@ -1721,7 +1852,7 @@
                 filtered.forEach(course => {
                     courseListHtml += `
                         <div class="course-row">
-                            <div>${escapeHtml(course)}</div>
+                            <div><strong>${escapeHtml(courseShortLabel(course))}</strong>${courseShortLabel(course) === course ? '' : `<div style="font-size:11px;color:#64748b;">${escapeHtml(course)}</div>`}</div>
                             <div><button class="delete-course-btn" onclick="deleteCourseFromManager('${escapeHtml(course).replace(/'/g, "\\'")}')">Delete</button></div>
                         </div>
                     `;
@@ -1739,10 +1870,6 @@
                     <div class="course-stat-card">
                         <div class="course-stat-number">${courses.length}</div>
                         <div class="course-stat-label">Total Courses</div>
-                    </div>
-                    <div class="course-stat-card" style="background:#e8f5e9;">
-                        <div class="course-stat-number" style="color:#388e3c;">${courses.filter(c => c.includes('Agile') || c.includes('Scrum')).length}</div>
-                        <div class="course-stat-label">Agile/Scrum</div>
                     </div>
                     <div class="course-stat-card" style="background:#fff3e0;">
                         <div class="course-stat-number" style="color:#f57c00;">${courses.filter(c => c.includes('SAFe') || c.includes('PMI') || c.includes('PMP') || c.includes('Project')).length}</div>
@@ -1984,7 +2111,9 @@
 
         function autoGenerateTemplate() {
             let customer = document.getElementById("customer").value;
-            let course = stripTrademark(document.getElementById("courseSearch").value);
+            const courseInput = document.getElementById("courseSearch").value;
+            const selectedCourse = selectedCourseFullName || matchingCourseFullName(courseInput) || courseInput;
+            let course = formatCourseForEmail(selectedCourse);
             let salesValue = document.getElementById("sales").value;
             let region = selectedRegionValue;
             if (!customer && !course && !salesValue) {
@@ -2017,7 +2146,7 @@
             } else if (region === "usa") {
                 signature = `Regards,<br><b>Team Support</b><br><b>USA - +1-361-998-9988</b><br><b>CAN - +1-249-500-3143</b>`;
             }
-            let template = `Hi ${formattedCustomer},<br><br>Greetings!<br><br>Thank you for your interest shown for our <b>${course}</b>.<br><br>Your query is being forwarded to my colleague <b>${sales} (In cc)</b> who will be providing you with all the necessary information. Meanwhile, please share the below information so that we could assist you accordingly.<br><br>1. Participant count:<br>2. Preferred dates:<br>3. Private/Public session:<br>4. Contact number:<br><br>@${sales} - Please share the information and do the needful.<br><br>${signature}`;
+            let template = `Hi ${escapeHtml(formattedCustomer)},<br><br>Greetings!<br><br>Thank you for your interest shown for our <b>${escapeHtml(course)}</b>.<br><br>Your query is being forwarded to my colleague <b>${escapeHtml(sales)} (In cc)</b> who will be providing you with all the necessary information. Meanwhile, please share the below information so that we could assist you accordingly.<br><br>1. Participant count:<br>2. Preferred dates:<br>3. Private/Public session:<br>4. Contact number:<br><br>@${escapeHtml(sales)} - Please share the information and do the needful.<br><br>${signature}`;
             document.getElementById("output").innerHTML = template;
         }
 
@@ -2032,6 +2161,7 @@
         function handleCourseKeyUp(event) { filterCourses(); autoGenerateTemplate(); }
 
         function handleInputChange() {
+            selectedCourseFullName = "";
             const clearBtn = document.getElementById('clearCourseBtn');
             document.getElementById('courseSearch').value.length > 0 ? clearBtn.style.display = 'flex' : clearBtn.style.display = 'none';
             filterCourses();
@@ -2051,6 +2181,7 @@
         }
 
         function clearCourseInput() {
+            selectedCourseFullName = "";
             document.getElementById('courseSearch').value = '';
             document.getElementById('clearCourseBtn').style.display = 'none';
             filterCourses();
@@ -2103,27 +2234,27 @@
         function showDropdown() { document.getElementById("courseDropdown").style.display = "block"; filterCourses(); }
 
         function filterCourses() {
-            let input = document.getElementById("courseSearch").value.toLowerCase();
-            let items = document.getElementsByClassName("course-item");
+            const input = normalizeCourseSearch(document.getElementById('courseSearch').value);
+            const items = document.getElementsByClassName('course-item');
             let has = false;
             for (let i = 0; i < items.length; i++) {
-                if (items[i].innerText.toLowerCase().includes(input)) {
-                    items[i].style.display = "block";
-                    has = true;
-                } else {
-                    items[i].style.display = "none";
-                }
+                const indexed = items[i].dataset.search || normalizeCourseSearch(items[i].innerText);
+                const show = !input || indexed.includes(input);
+                items[i].style.display = show ? 'block' : 'none';
+                if (show) has = true;
             }
-            const dd = document.getElementById("courseDropdown");
-            if (!has && input.length) dd.style.display = "none";
-            else if (input.length || dd.style.display === "block") dd.style.display = "block";
+            const dd = document.getElementById('courseDropdown');
+            if (!has && input) dd.style.display = 'none';
+            else if (input || dd.style.display === 'block') dd.style.display = 'block';
             currentSelectedIndex = -1;
         }
 
         function selectCourse(el) {
-            document.getElementById("courseSearch").value = el.innerText;
-            document.getElementById("courseDropdown").style.display = "none";
-            document.getElementById("clearCourseBtn").style.display = 'flex';
+            const full = el.dataset.course || el.innerText;
+            selectedCourseFullName = full;
+            document.getElementById('courseSearch').value = courseShortLabel(full);
+            document.getElementById('courseDropdown').style.display = 'none';
+            document.getElementById('clearCourseBtn').style.display = 'flex';
             currentSelectedIndex = -1;
             resetComboSelectors();
             autoGenerateTemplate();
