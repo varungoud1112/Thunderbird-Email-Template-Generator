@@ -729,6 +729,34 @@
             font-size: 14px;
         }
 
+        .combo-section {
+            margin-bottom: 18px;
+            padding: 14px;
+            background: #fff8e6;
+            border: 1px solid #ffe4a3;
+            border-radius: 10px;
+        }
+
+        .combo-section label {
+            margin-bottom: 10px;
+        }
+
+        .combo-row {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .combo-row select {
+            margin-bottom: 0;
+        }
+
+        .combo-row select:disabled {
+            background: #f2f2f2;
+            color: #999;
+            cursor: not-allowed;
+        }
+
         .sync-note {
             font-size: 11px;
             color: #888;
@@ -788,6 +816,18 @@
                     <button class="clear-course-btn" id="clearCourseBtn" onclick="clearCourseInput()" title="Clear course">×</button>
                 </div>
                 <div id="courseDropdown" class="course-dropdown"></div>
+
+                <div class="combo-section">
+                    <label>🎁 Or Choose a Combo Course</label>
+                    <div class="combo-row">
+                        <select id="comboCategory" onchange="onComboCategoryChange()">
+                            <option value="">Select Combo Category</option>
+                        </select>
+                        <select id="comboCourseSelect" onchange="onComboCourseChange()" disabled>
+                            <option value="">Select Combo Course</option>
+                        </select>
+                    </div>
+                </div>
 
                 <label>👨‍💼 Select Sales Person</label>
                 <select id="sales" onchange="autoSelectRegion(); autoGenerateTemplate();">
@@ -865,6 +905,7 @@
             <div class="howto-body">
                 <div class="simple-step"><div class="step-icon">1️⃣</div><div class="step-info"><strong>Enter Customer Name</strong><span>Auto-capitalizes first letter</span></div></div>
                 <div class="simple-step"><div class="step-icon">2️⃣</div><div class="step-info"><strong>Select a Course</strong><span>Type or browse list • Press Enter to select</span></div></div>
+                <div class="simple-step"><div class="step-icon">🎁</div><div class="step-info"><strong>Or Pick a Combo</strong><span>Choose a combo category, then the specific combo course</span></div></div>
                 <div class="simple-step"><div class="step-icon">3️⃣</div><div class="step-info"><strong>Select Sales Person</strong><span>Region auto-detects automatically</span></div></div>
                 <div class="simple-step"><div class="step-icon">✨</div><div class="step-info"><strong>Auto-Generates</strong><span>Template appears instantly on right</span></div></div>
                 <div class="simple-step"><div class="step-icon">📋</div><div class="step-info"><strong>Copy Template</strong><span>Use the Copy Template button only</span></div></div>
@@ -1035,19 +1076,199 @@
         }
 
         // ============================================
+        // SHARED STORAGE — backed by a Netlify Function + Netlify Blobs
+        // (works when this site is deployed on Netlify with the
+        // /netlify/functions/data.js function included)
+        // ============================================
+        const SHARED_API = '/.netlify/functions/data';
+
+        const sharedStorage = {
+            async get(key) {
+                const res = await fetch(`${SHARED_API}?key=${encodeURIComponent(key)}`, { method: 'GET' });
+                if (!res.ok) throw new Error('Shared storage GET failed: ' + res.status);
+                const text = await res.text();
+                if (!text || text === 'null') return null;
+                return { key, value: text };
+            },
+            async set(key, value) {
+                const res = await fetch(`${SHARED_API}?key=${encodeURIComponent(key)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: value
+                });
+                if (!res.ok) throw new Error('Shared storage SET failed: ' + res.status);
+                return { key, value };
+            }
+        };
+
+        // ============================================
+        // COMBO COURSES — grouped as shown on
+        // simpliaxis.com/combo-courses ("Unbeatable Saving Combo
+        // Schedule"): Scrum Alliance / Scaled Agile / PMI / Other.
+        //
+        // COMBO_FALLBACK is the bundled snapshot (used until the
+        // scheduled sync function has run at least once, or if a live
+        // sync temporarily fails). `comboData` is what's actually shown
+        // and gets replaced by the auto-synced version once available.
+        // ============================================
+        const COMBO_LABELS = {
+            scrumAlliance: "Scrum Alliance Combo",
+            scaledAgile: "Scaled Agile Combo",
+            pmi: "PMI Combo",
+            other: "Other Combo"
+        };
+
+        const COMBO_FALLBACK = {
+            scrumAlliance: [
+                "CSM Certification Training & A-CSM Certification Training",
+                "A-CSM Certification Training & CSP-SM Certification Training",
+                "CSPO Certification Training & A-CSPO Certification Training",
+                "A-CSPO Certification Training & CSP-PO Certification Training",
+                "A-CSM Certification Training & A-CSPO Certification Training",
+                "CSD Certification Training & A-CSD Certification Training",
+                "CAL 1 Certification Training & CAL 2 Certification Training",
+                "CSM Certification Training & CSPO Certification Training",
+                "CSM Certification Training & A-CSM Certification Training & CSP-SM Certification Training",
+                "CSPO Certification Training & A-CSPO Certification Training & CSP-PO Certification Training",
+                "CSM Certification Training & AI for Scrum Masters Micro-credential Course",
+                "CSPO Certification Training & AI for Product Owners Micro-credential Course",
+                "AI for Scrum Masters Micro-credential Course & AI for Product Owners Micro-credential Course",
+                "CSM Certification Training & AI for Scrum Master Micro-credential Course On demand",
+                "CSPO Certification Training & AI for Product Owners Micro-credential Course On demand",
+                "CAL 1 Certification Training & Agile Coaching Skills Course On Demand",
+                "CAL 2 Certification Training & Agile Coaching Skills Course On Demand"
+            ],
+            scaledAgile: [
+                "Leading SAFe Certification Training & SAFe RTE Certification Training",
+                "SSM Certification Training & SAFe RTE Certification Training",
+                "SAFe POPM Certification Training & SAFe RTE Certification Training",
+                "Leading SAFe Certification Training & SSM Certification Training",
+                "Leading SAFe Certification Training & SAFe POPM Certification Training",
+                "SSM Certification Training & SAFe POPM Certification Training",
+                "SAFe RTE Certification Training & SPC Certification Training",
+                "SAFe LPM Certification Training & SAFe APM Certification Training",
+                "Leading SAFe Certification Training & SAFe for Teams Certification Training",
+                "SSM Certification Training & SAFe for Teams Certification Training",
+                "SAFe POPM Certification Training & SAFe for Teams Certification Training",
+                "SPC Certification Training & ASPC Certification Path",
+                "SSM Certification Training & ASM Certification Path",
+                "Leading SAFe Certification Training & SSM Certification Training & SAFe POPM Certification Training"
+            ],
+            pmi: [
+                "PMP Certification Training & PgMP Certification Training",
+                "PMP Certification Training and Exam Bundle & PgMP Certification Training and Exam Bundle",
+                "PgMP Certification Training & PfMP Certification Training",
+                "PgMP Certification Training and Exam Bundle & PfMP Certification Training and Exam Bundle",
+                "PMP Certification Training and Exam Bundle + Study Hall",
+                "PMP Certification Training and Exam Bundle",
+                "PgMP Certification Training and Exam Bundle",
+                "PfMP Certification Training and Exam Bundle"
+            ],
+            other: [
+                "Leading SAFe Certification Training & PMP Certification Training and Exam bundle",
+                "SSM Certification Training & PMP Certification Training and Exam bundle",
+                "SAFe POPM Certification Training & PMP Certification Training and Exam bundle"
+            ]
+        };
+
+        // What's actually rendered — starts as the bundled fallback,
+        // replaced by auto-synced data once loadComboData() resolves.
+        let comboData = JSON.parse(JSON.stringify(COMBO_FALLBACK));
+
+        async function loadComboData() {
+            try {
+                const result = await sharedStorage.get('simpliaxisCombos');
+                if (result && result.value) {
+                    const parsed = JSON.parse(result.value);
+                    if (parsed && typeof parsed === 'object') {
+                        comboData = { ...comboData, ...parsed };
+                    }
+                }
+            } catch (e) {
+                // Not synced yet — keep using the bundled fallback
+                console.error('Could not load auto-synced combo data, using bundled defaults', e);
+            }
+        }
+
+        // Metadata about the most recent auto-sync run, shown in Admin panel
+        let simpliaxisLastSync = null;
+
+        async function loadSimpliaxisSyncStatus() {
+            try {
+                const result = await sharedStorage.get('simpliaxisLastSync');
+                if (result && result.value) {
+                    simpliaxisLastSync = JSON.parse(result.value);
+                }
+            } catch (e) { /* not synced yet */ }
+        }
+
+        function populateComboCategories() {
+            const sel = document.getElementById('comboCategory');
+            if (!sel) return;
+            let html = '<option value="">Select Combo Category</option>';
+            Object.keys(COMBO_LABELS).forEach(key => {
+                html += `<option value="${key}">${escapeHtml(COMBO_LABELS[key])}</option>`;
+            });
+            sel.innerHTML = html;
+        }
+
+        function onComboCategoryChange() {
+            const catKey = document.getElementById('comboCategory').value;
+            const courseSel = document.getElementById('comboCourseSelect');
+            if (!catKey) {
+                courseSel.innerHTML = '<option value="">Select Combo Course</option>';
+                courseSel.disabled = true;
+                return;
+            }
+            const list = comboData[catKey] || [];
+            let html = '<option value="">Select Combo Course</option>';
+            list.forEach(raw => {
+                const c = stripTrademark(raw);
+                html += `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`;
+            });
+            courseSel.innerHTML = html;
+            courseSel.disabled = false;
+        }
+
+        function onComboCourseChange() {
+            const value = document.getElementById('comboCourseSelect').value;
+            if (!value) return;
+            document.getElementById('courseSearch').value = value;
+            document.getElementById('clearCourseBtn').style.display = 'flex';
+            autoGenerateTemplate();
+        }
+
+        // ============================================
         // COURSES MANAGEMENT (SHARED storage — live for everyone)
         // ============================================
         let courses = [];
 
+        // Strips ® / ™ symbols (and tidies leftover double-spaces) from any
+        // course/combo text before it's shown or used in a generated email —
+        // a client-side safety net alongside the server-side stripping that
+        // already happens in the SimpliAxis sync function.
+        function stripTrademark(text) {
+            if (!text) return text;
+            return text.replace(/[®™]/g, "").replace(/\s{2,}/g, " ").trim();
+        }
+
+        // Normalized key used ONLY for de-duplication (lower-cased, trademark
+        // symbols and extra whitespace removed) so that e.g. "PMP®" and "pmp"
+        // and "PMP " all collapse to a single visible entry instead of
+        // showing as separate near-duplicates in the search dropdown.
+        function courseDedupeKey(text) {
+            return stripTrademark(text).toLowerCase();
+        }
+
         // THE FULL COURSE LIST AS PROVIDED (including duplicates) — used only as first-time default
         const DEFAULT_COURSES = [
-            "Certified Scrum Master (CSM) Certification Training",
+            "Certified ScrumMaster (CSM) Certification Training",
             "Certified Scrum Product Owner (CSPO) Certification Training",
             "Advanced Certified Scrum Master (A-CSM) Certification Training",
             "Advanced Certified Scrum Product Owner (A-CSPO) Certification Training",
             "Certified Scrum Developer (CSD) Certification Training",
             "Agile and Scrum Training",
-            "PMI-Agile Certified Practitioner (PMI-ACP) Certification Training",
+            "PMI Agile Certified Practitioner (PMI-ACP) Certification Training",
             "Professional Scrum Master (PSM I) Certification Training",
             "Certified Agile Scaling Practitioner 1 (CASP 1) Training",
             "Agile Coaching Skills - Certified Facilitator (CAF) Training",
@@ -1061,14 +1282,12 @@
             "Certified Scrum Professional - ScrumMaster (CSP-SM) Certification Training",
             "Certified Agile Leader 2 (CAL 2) Certification Training",
             "Professional Scrum Product Owner (PSPO) - Advanced Course",
-            "Scrum@Scale Certification Training",
             "ICAgile Coaching Agile Transformations (ICP-CAT) Certification Training",
             "Professional Agile Leadership Essentials (PAL-E) Certification Training",
             "Behaviour Driven Development (BDD) Training",
             "Test Driven Development (TDD) Training",
             "ICAgile Agility in the Enterprise (ICP-ENT) Certification Training",
             "ICAgile(ICP) Fundamental Certification Training",
-            "Agile Fundamentals : Including Scrum and Kanban Training",
             "Manage Agile Projects Using Scrum Training",
             "Agile for Executives Training",
             "Agile for Managers Training",
@@ -1090,31 +1309,32 @@
             "ICAgile People Development (ICP-PDV) Certification Training",
             "ICAgile Systems Coaching (ICP-SYS) Certification Training",
             "ICAgile Business Agility Foundations (ICP-BAF) Certification Training",
-            "Professional Scrum Master-AI Essentials (PSM-AI) Certification Training",
-            "Professional Scrum Product Owner-AI Essentials (PSPO-AI Essentials) Certification Training",
+            "Professional Scrum Master AI Essentials Certification Training",
+            "Professional Scrum Product Owner–AI Essentials (PSPO-AI Essentials) Certification Training",
             "ICAgile Adaptive Org Design (ICP-ORG) Certification Training",
-            "AI-Empowered Leading SAFe 6.0 Certification Training",
-            "AI-Empowered SAFe 6.0 Scrum Master (SSM) Certification Training",
-            "AI-Empowered SAFe 6.0 Product Owner/Product Manager (POPM) Certification Training",
+            "AI-Empowered Leading SAFe (6.0) Training with SAFe Agilist Certification",
+            "AI-Empowered SAFe Scrum Master Certification Training",
+            "AI-Empowered SAFe Product Owner/Product Manager (POPM) Certification Training",
+            "AI-Empowered SAFe 6.0 Advanced Scrum Master (SASM) Certification Training",
+            "AI-Empowered SAFe 6.0 Release Train Engineer (RTE) Certification Training",
             "AI-Empowered SAFe 6.0 Practice Consultant (SPC) Certification Training",
             "SAFe 6.0 Lean Portfolio Management (LPM) Certification Training",
-            "SAFe 6.0 Architects Certification Training",
-            "AI-Empowered SAFe 6.0 for Teams Certification Training",
-            "AI-Empowered Advanced SAFe Practice Consultant (ASPC) Certification Path",
-            "AI-Empowered SAFe 6.0 Release Train Engineer (RTE) Certification Training",
-            "SAFe 6.0 DevOps Certification Training",
-            "Advanced Facilitator: Conflict & Collaboration Micro-Credential Course",
             "SAFe 6.0 Agile Product Management (APM) Certification Training",
-            "SAFe 5.0 Agile Software Engineering Certification Training",
+            "AI-Empowered Advanced SAFe Practice Consultant (ASPC) Certification Path",
+            "AI-Empowered SAFe 6.0 for Teams Certification Training",
+            "SAFe 6.0 Architects Certification Training",
+            "SAFe 6.0 DevOps Certification Training",
+            "SAFe 6.0 Agile Software Engineering Certification Training",
             "Advanced Facilitator: Value Stream Mapping Micro-Credential Course",
             "Achieving Responsible AI with SAFe Micro-credential Course",
+            "AI-Empowered Leading SAFe 6.0 for Government Certification Training",
             "Agile HR Explorer (AHRE) Training and Certification",
-            "AI-Empowered SAFe Advanced Scrum Master Certification Path",
+            "Advanced Scrum Master Certification Path",
+            "Advanced Facilitator: Conflict & Collaboration Micro-Credential Course",
             "SAFe for Hardware Certification Training",
             "AI-Native Foundations Certification Training Course",
             "AI-Native Change Agent Certification Training Course",
             "Project Management Professional (PMP) Certification Training",
-            "Project Management Techniques Training",
             "PRINCE2 Foundation and Practitioner Certification Training",
             "PRINCE2 Foundation Certification Training",
             "PRINCE2 Practitioner Certification Training",
@@ -1129,19 +1349,20 @@
             "Disciplined Agile Foundations (DAF) Training",
             "PMI-CPMAI Certification Training",
             "Primavera P6 Professional Fundamentals Certification Training",
+            "Project Management Techniques Training",
+            "PMI Scheduling Professional Certification Training",
+            "PMI Construction Professional Certification Training Course",
             "Business Case Writing Training",
             "Conflict Management Training",
             "Certified Business Analysis Professional (CBAP) Certification Training",
             "Change Management Training",
             "Certification of Capability in Business Analysis (CCBA) Training",
             "Entry Certificate in Business Analysis (ECBA) Certification Training",
-            "Design Thinking Training",
-            "Agile Analysis Certification (IIBA-AAC) Certification Training",
+            "Agile Analysis Certification (IIBA-AAC) Training",
             "Generative AI for Business & IT Leaders & Managers Training",
             "Generative AI for Business Analysts & Functional IT Consultants Training",
             "Cloud Fundamentals for Business Managers & Product Managers Training",
             "Generative AI Architect - Advanced Program Training",
-            "Multi-cloud FinOps: AWS, GCP, Azure",
             "Introduction to Generative AI Training",
             "Generative AI for Agile Leaders Training",
             "Generative AI for Scrum Masters Training",
@@ -1149,16 +1370,27 @@
             "Generative AI for Software Developers Course",
             "Generative AI for Project Managers Training",
             "Prompt Engineering Course",
-            "Generative AI for Product Owners/Product Managers Certification Training",
+            "Generative AI for Product Owners-Product Managers Certification Training",
             "Mastering Generative AI Tools Online",
             "Agentic AI Foundation Training Course",
             "Agentic AI Practitioner Training Course",
             "Claude Certified Architect – Foundations (CCA-F) Training Course",
             "AI For CXOs Workshop",
             "Agentic AI Engineering with Anthropic Claude Technologies Training Course",
-            "Generative AI for Scrum Masters Training",
-            "Prompt Engineering Course",
-            "Agentic AI Foundation Training Course",
+            "Forward Deployed Architect Program",
+            "AI-Native Development Using BDD Training",
+            "Agentic AI with Azure AI Foundry Program",
+            "Agentic AI for Software Testers Workshop",
+            "Artificial Intelligence Governance Professional Training",
+            "Agentic AI Engineering Workshop",
+            "Production Grade AI Applications & SDLC Automation with OpenAI Technologies Workshop",
+            "Agentic AI with AWS Bedrock Workshop",
+            "AI Engineering with GCP Vertex AI Workshop",
+            "Agentic and Generative AI Workshop for IT Services Business Leaders & Managers",
+            "Forward Deployed Engineering Program",
+            "Business Productivity & Automation with Agentic AI Workshop",
+            "Agentic AI for Business Transformation Workshop",
+            "AI for Software Architects Certification",
             "Agile Objectives and Key Results (Agile OKRs) MicroCredential Training",
             "AI for Scrum Masters Micro-credential Course",
             "AI for Product Owners Micro-credential Training",
@@ -1173,36 +1405,36 @@
             "ICAgile AI for Customer Insights Micro-credential Training",
             "UX and Design for Agile Teams Micro-credential Course",
             "Agile Coaching Skills Micro-credential Training",
-            "Six Sigma Fundamentals Training",
-            "Lean Six Sigma Yellow Belt Training",
-            "Lean Six Sigma Green Belt Training",
-            "Lean Six Sigma Black Belt Training",
-            "Root Cause Analysis (RCA) Training",
-            "Lean Six Sigma Yellow Belt Training - 8 Hours Crash Course",
-            "ITIL 4 Foundation Certification Training",
-            "ITIL 5 Foundation Certification Training",
-            "DevOps Foundation Certification Training",
-            "Docker and Kubernetes Training",
-            "Continuous Testing Foundation (CTF) Certification Training",
-            "Continuous Delivery Ecosystem Foundation (CDEF) Certification Training",
-            "DevSecOps Foundation Certification Training",
-            "AWS SysOps Administrator Certification Training",
-            "AWS DevOps Engineer Certification Training",
-            "AWS Cloud Practitioner Certification Training",
-            "AWS Certified Solutions Architect Professional Certification Training",
-            "Cloud Computing with AWS Training",
+            "Applied Agentic AI Certification Training Course",
             "Data Science With Python Training",
             "Python Django (PD) Training",
             "Introduction to Artificial Intelligence and Machine Learning (AI and ML) Training",
             "Artificial Intelligence (AI) Training",
             "Data Science Training",
-            "Applied Agentic AI Certification Training Course",
+            "Extreme Programming Practitioner Training",
             "Certified Artificial Intelligence For Agile Leaders Training",
+            "Lean Six Sigma Black Belt Certification Training",
+            "Lean Six Sigma Green Belt Training",
+            "Lean Six Sigma Yellow Belt Training",
+            "Lean Six Sigma Yellow Belt Training - 4 Hours Crash Course",
+            "Root Cause Analysis (RCA) Training",
+            "ISO-IEC 42001: 2023 Lead Implementer Certification Training",
+            "AI-Augmented Lean Six Sigma Master Certification Program",
+            "DevOps Foundation Certification Training",
+            "Docker and Kubernetes Training",
+            "DevSecOps Foundation Certification Training",
             "Angular JS Training",
             "React Native Training",
             "React JS Training",
-            "Introduction to Blockchain Training",
             "Python for Beginners Training",
+            "UX Design Training",
+            "ITIL 4 Foundation Certification Training",
+            "ITIL 5 Foundation Certification Training",
+            "AWS SysOps Administrator Certification Training",
+            "AWS DevOps Engineer Certification Training",
+            "AWS Cloud Practitioner Certification Training",
+            "AWS Certified Solutions Architect Professional Certification Training",
+            "Cloud Computing with AWS Training",
             "Python Programming Training",
             "PCI DSS Training",
             "Microsoft AZ-400: Designing and Implementing Microsoft DevOps Solutions Training",
@@ -1217,7 +1449,7 @@
         // Load courses from SHARED storage (same list for every visitor on this link)
         async function loadCourses() {
             try {
-                const result = await window.storage.get('courses', true);
+                const result = await sharedStorage.get('courses');
                 if (result && result.value) {
                     courses = JSON.parse(result.value);
                 } else {
@@ -1225,16 +1457,22 @@
                     await saveCourses();
                 }
             } catch (e) {
-                // Key doesn't exist yet (first ever run) or a fetch error — seed shared storage
-                courses = [...DEFAULT_COURSES];
-                try { await saveCourses(); } catch (e2) { console.error('Could not seed shared courses', e2); }
+                // Backend unreachable (first ever run, or the Function isn't deployed) — fall back locally
+                console.error('Could not load shared courses', e);
+                if (courses.length === 0) courses = [...DEFAULT_COURSES];
             }
             renderCourseDropdown();
         }
 
+        // Auto-synced individual courses from SimpliAxis used to be merged
+        // into the Select Course dropdown here. That merge has been removed
+        // so unwanted, auto-scraped courses no longer show up — Select
+        // Course now only ever shows the manually-managed (pasted) list.
+        let autoCourses = [];
+
         async function saveCourses() {
             try {
-                const result = await window.storage.set('courses', JSON.stringify(courses), true);
+                const result = await sharedStorage.set('courses', JSON.stringify(courses));
                 if (!result) console.error('Course save returned no result');
             } catch (e) {
                 console.error('Failed to save courses to shared storage', e);
@@ -1245,17 +1483,31 @@
         function renderCourseDropdown() {
             const dd = document.getElementById('courseDropdown');
             if (!dd) return;
+            // Select Course now shows ONLY the manually-managed course list
+            // (the pasted courses file) — auto-synced SimpliAxis courses are
+            // no longer merged in here, so no unwanted courses show up.
+            // Still deduped case-insensitively (and with ® / ™ stripped) on a
+            // normalized key, so "PMP®", "pmp", "PMP " etc. collapse to one entry.
+            const seen = new Map(); // dedupeKey -> display text
+            [...courses].forEach(raw => {
+                const clean = stripTrademark(raw);
+                if (!clean) return;
+                const key = courseDedupeKey(clean);
+                if (!seen.has(key)) seen.set(key, clean);
+            });
+            const merged = Array.from(seen.values()).sort((a, b) => a.localeCompare(b));
             let html = '';
-            courses.forEach(course => {
+            merged.forEach(course => {
                 html += `<div class="course-item" onclick="selectCourse(this)">${escapeHtml(course)}</div>`;
             });
             dd.innerHTML = html;
         }
 
         async function addCourse(name) {
-            name = name.trim();
+            name = stripTrademark(name);
             if (!name) return false;
-            if (courses.includes(name)) return false;
+            const key = courseDedupeKey(name);
+            if (courses.some(c => courseDedupeKey(c) === key)) return false;
             courses.push(name);
             courses.sort();
             await saveCourses();
@@ -1294,7 +1546,7 @@
 
         async function loadSalesData() {
             try {
-                const result = await window.storage.get('salesPersons', true);
+                const result = await sharedStorage.get('salesPersons');
                 if (result && result.value) {
                     salesPersons = JSON.parse(result.value);
                 } else {
@@ -1302,15 +1554,15 @@
                     await saveSalesData();
                 }
             } catch (e) {
-                salesPersons = defaultSalesPersons();
-                try { await saveSalesData(); } catch (e2) { console.error('Could not seed shared sales persons', e2); }
+                console.error('Could not load shared sales persons', e);
+                if (salesPersons.length === 0) salesPersons = defaultSalesPersons();
             }
             refreshSalesDropdown();
         }
 
         async function saveSalesData() {
             try {
-                const result = await window.storage.set('salesPersons', JSON.stringify(salesPersons), true);
+                const result = await sharedStorage.set('salesPersons', JSON.stringify(salesPersons));
                 if (!result) console.error('Sales save returned no result');
             } catch (e) {
                 console.error('Failed to save sales persons to shared storage', e);
@@ -1554,7 +1806,7 @@
                 const salesModalOpen = document.getElementById('salesManagerModal').style.display === 'flex';
 
                 try {
-                    const result = await window.storage.get('courses', true);
+                    const result = await sharedStorage.get('courses');
                     if (result && result.value) {
                         const latest = JSON.parse(result.value);
                         if (JSON.stringify(latest) !== JSON.stringify(courses)) {
@@ -1570,7 +1822,7 @@
                 } catch (e) { /* ignore transient errors */ }
 
                 try {
-                    const result = await window.storage.get('salesPersons', true);
+                    const result = await sharedStorage.get('salesPersons');
                     if (result && result.value) {
                         const latest = JSON.parse(result.value);
                         if (JSON.stringify(latest) !== JSON.stringify(salesPersons)) {
@@ -1580,6 +1832,38 @@
                         }
                     }
                 } catch (e) { /* ignore transient errors */ }
+
+                // Auto-synced individual courses (from simpliaxis.com) are no
+                // longer pulled into the Select Course dropdown — intentionally
+                // not polled here anymore.
+
+                // Auto-synced combo courses (from simpliaxis.com)
+                try {
+                    const result = await sharedStorage.get('simpliaxisCombos');
+                    if (result && result.value) {
+                        const latest = JSON.parse(result.value);
+                        if (JSON.stringify(latest) !== JSON.stringify(comboData)) {
+                            comboData = { ...comboData, ...latest };
+                            const catSel = document.getElementById('comboCategory');
+                            const courseSel = document.getElementById('comboCourseSelect');
+                            if (catSel && catSel.value) {
+                                const currentVal = courseSel ? courseSel.value : '';
+                                onComboCategoryChange();
+                                if (currentVal && courseSel && [...courseSel.options].some(o => o.value === currentVal)) {
+                                    courseSel.value = currentVal;
+                                }
+                            }
+                        }
+                    }
+                } catch (e) { /* not synced yet, ignore */ }
+
+                // Sync status metadata (for the Admin panel)
+                try {
+                    const result = await sharedStorage.get('simpliaxisLastSync');
+                    if (result && result.value) {
+                        simpliaxisLastSync = JSON.parse(result.value);
+                    }
+                } catch (e) { /* not synced yet, ignore */ }
             }, 15000); // every 15 seconds
         }
 
@@ -1615,6 +1899,26 @@
             const totalVisitors = visitorLogs.length;
             const totalVisits = visitorLogs.reduce((sum, log) => sum + (log.visitCount || 1), 0);
             const countries = [...new Set(visitorLogs.map(log => log.country).filter(c => c && c !== 'Unknown'))];
+            let syncStatusHtml = '';
+            if (simpliaxisLastSync) {
+                const when = new Date(simpliaxisLastSync.at).toLocaleString();
+                const status = simpliaxisLastSync.coursesApplied && simpliaxisLastSync.combosApplied
+                    ? '✅ Applied'
+                    : '⚠️ Skipped (scrape looked too small — kept previous data)';
+                const sources = simpliaxisLastSync.sources
+                    ? ` (sitemap: ${simpliaxisLastSync.sources.sitemapCourses}, combo-page: ${simpliaxisLastSync.sources.comboPageCourses})`
+                    : '';
+                syncStatusHtml = `
+                    <div style="background:#e8f5e9; border-left:3px solid #28a745; padding:10px; border-radius:6px; margin-bottom:15px; font-size:12px;">
+                        🔄 <strong>SimpliAxis auto-sync</strong> — last run: ${when}<br>
+                        Found ${simpliaxisLastSync.coursesFound} courses${sources}, ${simpliaxisLastSync.combosFound} combos. ${status}
+                    </div>`;
+            } else {
+                syncStatusHtml = `
+                    <div style="background:#fff3cd; border-left:3px solid #ffc107; padding:10px; border-radius:6px; margin-bottom:15px; font-size:12px;">
+                        🔄 <strong>SimpliAxis auto-sync</strong> — hasn't run yet. It runs automatically once a day, or trigger it now via <code>/.netlify/functions/sync-simpliaxis-now</code>.
+                    </div>`;
+            }
             let tableRows = '';
             if (visitorLogs.length === 0) {
                 tableRows = '<tr><td colspan="6" style="text-align:center; padding:40px;">No visitors recorded yet</td></tr>';
@@ -1626,8 +1930,9 @@
             }
             container.innerHTML = `
                 <div style="background:#fff3cd; border-left:3px solid #ffc107; padding:10px; border-radius:6px; margin-bottom:15px; font-size:12px;">
-                    ℹ️ Visitor logs and copy count are tracked per-device (this browser only). Courses and Sales Persons are the shared, live lists.
+                    ℹ️ Visitor logs and copy count are tracked per-device (this browser only). Courses, Combos and Sales Persons are the shared, live lists.
                 </div>
+                ${syncStatusHtml}
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
                     <div class="visitor-stats" style="margin-bottom:0;">
                         <div class="stat-card"><div class="stat-number">${totalVisitors}</div><div class="stat-label">Unique</div></div>
@@ -1679,7 +1984,7 @@
 
         function autoGenerateTemplate() {
             let customer = document.getElementById("customer").value;
-            let course = document.getElementById("courseSearch").value;
+            let course = stripTrademark(document.getElementById("courseSearch").value);
             let salesValue = document.getElementById("sales").value;
             let region = selectedRegionValue;
             if (!customer && !course && !salesValue) {
@@ -1749,6 +2054,7 @@
             document.getElementById('courseSearch').value = '';
             document.getElementById('clearCourseBtn').style.display = 'none';
             filterCourses();
+            resetComboSelectors();
             autoGenerateTemplate();
             currentSelectedIndex = -1;
         }
@@ -1819,7 +2125,18 @@
             document.getElementById("courseDropdown").style.display = "none";
             document.getElementById("clearCourseBtn").style.display = 'flex';
             currentSelectedIndex = -1;
+            resetComboSelectors();
             autoGenerateTemplate();
+        }
+
+        function resetComboSelectors() {
+            const catSel = document.getElementById('comboCategory');
+            const courseSel = document.getElementById('comboCourseSelect');
+            if (catSel) catSel.value = '';
+            if (courseSel) {
+                courseSel.innerHTML = '<option value="">Select Combo Course</option>';
+                courseSel.disabled = true;
+            }
         }
 
         function autoSelectRegion() {
@@ -1886,9 +2203,12 @@
         // ============================================
         (async function init() {
             await loadCourses();
+            await loadComboData();
+            await loadSimpliaxisSyncStatus();
             await loadSalesData();
             loadVisitorLogs();
             loadTemplateCopyCount();
+            populateComboCategories();
             fetchAndLogIP();
             startLiveSync();
             setTimeout(() => {
@@ -1898,22 +2218,6 @@
             }, 100);
         })();
     </script>
-    <!--Start of Tawk.to Script-->
-<script type="text/javascript">
-var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-(function(){
-var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-s1.async=true;
-s1.src='https://embed.tawk.to/6aa28403a9c29834424211ca/1k25d7brl';
-s1.charset='UTF-8';
-s1.setAttribute('crossorigin','*');
-s0.parentNode.insertBefore(s1,s0);
-})();
-</script>
-<!--End of Tawk.to Script-->
     <script disable-devtool-auto src='https://cdn.jsdelivr.net/npm/disable-devtool'></script>
-
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2743977843413774"
-     crossorigin="anonymous"></script>
 </body>
 </html>
