@@ -831,7 +831,7 @@
 
                 <label>📚 Select Course</label>
                 <div class="course-input-wrapper">
-                    <input type="text" id="courseSearch" placeholder="Search PMP, SSM, RTE, course name..." autocomplete="off" onclick="showDropdown()" onkeyup="handleCourseKeyUp(event)" oninput="handleInputChange()" onkeydown="handleKeyNavigation(event)">
+                    <input type="text" id="courseSearch" placeholder="Search by PMP, SSM, RTE or full course name..." autocomplete="off" onclick="showDropdown()" onkeyup="handleCourseKeyUp(event)" oninput="handleInputChange()" onkeydown="handleKeyNavigation(event)">
                     <button class="clear-course-btn" id="clearCourseBtn" onclick="clearCourseInput()" title="Clear course">×</button>
                 </div>
                 <div id="courseDropdown" class="course-dropdown"></div>
@@ -1548,7 +1548,7 @@
             if (!query) return "";
             const matches = courses.filter(name => {
                 const meta = courseMetadata(name);
-                return [name, ...(meta ? [meta.short, ...(meta.aliases || [])] : [])]
+                return [name, formatCourseForEmail(name), ...(meta ? [meta.short, ...(meta.aliases || [])] : [])]
                     .some(term => normalizeCourseSearch(term) === query);
             });
             return matches.length === 1 ? matches[0] : "";
@@ -1624,7 +1624,7 @@
                 return `<div class="course-item" data-course="${escapeHtml(full)}" ` +
                     `data-search="${escapeHtml(searchTerms)}" onclick="selectCourse(this)">` +
                     `<span class="course-short">${escapeHtml(short)}</span>` +
-                    (short === full ? '' : `<span class="course-full">${escapeHtml(full)}</span>`) +
+                    (short === full ? '' : `<span class="course-full">${escapeHtml(formatCourseForEmail(full))}</span>`) +
                     `</div>`;
             }).join('');
         }
@@ -2234,7 +2234,13 @@
         function showDropdown() { document.getElementById("courseDropdown").style.display = "block"; filterCourses(); }
 
         function filterCourses() {
-            const input = normalizeCourseSearch(document.getElementById('courseSearch').value);
+            const entered = document.getElementById('courseSearch').value;
+            // After selecting a course, the search input shows the full title
+            // including its abbreviation. Clicking the field should still
+            // offer all courses instead of hiding the dropdown on an exact match.
+            const isSelectedDisplay = selectedCourseFullName &&
+                entered === formatCourseForEmail(selectedCourseFullName);
+            const input = isSelectedDisplay ? '' : normalizeCourseSearch(entered);
             const items = document.getElementsByClassName('course-item');
             let has = false;
             for (let i = 0; i < items.length; i++) {
@@ -2252,7 +2258,9 @@
         function selectCourse(el) {
             const full = el.dataset.course || el.innerText;
             selectedCourseFullName = full;
-            document.getElementById('courseSearch').value = courseShortLabel(full);
+            // Display the complete title WITH its abbreviation, not only 'SSM'.
+            // Keep the original name in selectedCourseFullName for template logic.
+            document.getElementById('courseSearch').value = formatCourseForEmail(full);
             document.getElementById('courseDropdown').style.display = 'none';
             document.getElementById('clearCourseBtn').style.display = 'flex';
             currentSelectedIndex = -1;
