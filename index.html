@@ -813,7 +813,7 @@
 
     <div class="container">
         <div class="header">
-            <span class="header-badge">✨ Updated Version v2.2</span>
+            <span class="header-badge">✨ Live Sales Sync v3.0</span>
             Email Template Generator
             <div class="header-buttons">
                 <button class="courses-btn" onclick="openCoursesManager()">📚 Manage Courses</button>
@@ -852,6 +852,7 @@
                 <select id="sales" onchange="autoSelectRegion(); autoGenerateTemplate();">
                     <option value="">Select Sales Person</option>
                 </select>
+                <div id="salesSyncStatus" role="status" style="font-size:11px; margin-top:-10px; margin-bottom:14px; color:#667085">🔄 Connecting to shared sales list…</div>
 
                 <div id="regionDisplay" class="region-info" style="display:none;">
                     📍 <strong>Auto-selected Region:</strong> <span id="selectedRegion"></span>
@@ -990,7 +991,16 @@
         // ============================================
         // ADMIN PASSWORD
         // ============================================
-        const ADMIN_PASSWORD = "admin123";
+        // Admin permissions are checked by Netlify Functions, not hard-coded in HTML.
+        let managementPassword = '';
+        function promptForManagementPassword() {
+            if (managementPassword) return managementPassword;
+            const value = window.prompt('Enter the admin password to update shared lists:');
+            if (!value) return null;
+            managementPassword = value;
+            return value;
+        }
+        function clearManagementPassword() { managementPassword = ''; }
 
         // ============================================
         // VISITOR LOGS STORAGE (per-device; not shared)
@@ -1099,23 +1109,33 @@
         // (works when this site is deployed on Netlify with the
         // /netlify/functions/data.js function included)
         // ============================================
-        const SHARED_API = 'https://simpliaxistemplategen.vercel.app/.netlify/functions/data';
+        const SHARED_API = '/.netlify/functions/data';
+        const SALES_API = '/.netlify/functions/sales';
 
+        async function apiErrorMessage(res) {
+            let data = {};
+            try { data = await res.json(); } catch (_) {}
+            if (res.status === 401 || res.status === 403) clearManagementPassword();
+            return data.error || `Request failed (HTTP ${res.status})`;
+        }
+
+        // Public read-only keys; all updates require server-side admin verification.
         const sharedStorage = {
             async get(key) {
-                const res = await fetch(`${SHARED_API}?key=${encodeURIComponent(key)}`, { method: 'GET' });
-                if (!res.ok) throw new Error('Shared storage GET failed: ' + res.status);
-                const text = await res.text();
-                if (!text || text === 'null') return null;
-                return { key, value: text };
+                const res = await fetch(`${SHARED_API}?key=${encodeURIComponent(key)}`, { method: 'GET', cache: 'no-store' });
+                if (!res.ok) throw new Error(await apiErrorMessage(res));
+                const value = await res.text();
+                return value && value !== 'null' ? { key, value } : null;
             },
             async set(key, value) {
+                const pwd = promptForManagementPassword();
+                if (!pwd) throw new Error('Admin password is required to update the shared course list');
                 const res = await fetch(`${SHARED_API}?key=${encodeURIComponent(key)}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'text/plain; charset=utf-8', 'x-admin-password': pwd },
                     body: value
                 });
-                if (!res.ok) throw new Error('Shared storage SET failed: ' + res.status);
+                if (!res.ok) throw new Error(await apiErrorMessage(res));
                 return { key, value };
             }
         };
@@ -1555,32 +1575,17 @@
         }
 
 
-        // Shared storage continues to hold full course titles, not short labels.
-        // Existing customizations and deletions are preserved. One-time migration
-        // adds the newly identified course to pre-existing course lists.
+        // Read-only on page load: never re-add deleted courses on every visit.
+        // A saved list, including [], always takes precedence over bundled defaults.
         async function loadCourses() {
             try {
                 const result = await sharedStorage.get('courses');
-                if (result && result.value) {
+                if (result) {
                     const parsed = JSON.parse(result.value);
-                    courses = Array.isArray(parsed) ? parsed : [...DEFAULT_COURSES];
-                    try {
-                        const version = await sharedStorage.get('courseCatalogVersion');
-                        if (!version || version.value !== COURSE_CATALOG_VERSION) {
-                            if (!courses.some(name => courseDedupeKey(name) === courseDedupeKey(NEW_CATALOG_COURSE))) {
-                                courses.push(NEW_CATALOG_COURSE);
-                                courses.sort((a, b) => a.localeCompare(b));
-                                await saveCourses();
-                            }
-                            await sharedStorage.set('courseCatalogVersion', COURSE_CATALOG_VERSION);
-                        }
-                    } catch (migrationError) {
-                        console.warn('Course catalog migration could not sync', migrationError);
-                    }
+                    if (!Array.isArray(parsed)) throw new Error('Invalid course list');
+                    courses = parsed;
                 } else {
                     courses = [...DEFAULT_COURSES];
-                    await saveCourses();
-                    await sharedStorage.set('courseCatalogVersion', COURSE_CATALOG_VERSION);
                 }
             } catch (e) {
                 console.error('Could not load shared courses', e);
@@ -1597,11 +1602,12 @@
 
         async function saveCourses() {
             try {
-                const result = await sharedStorage.set('courses', JSON.stringify(courses));
-                if (!result) console.error('Course save returned no result');
+                await sharedStorage.set('courses', JSON.stringify(courses));
+                return true;
             } catch (e) {
-                console.error('Failed to save courses to shared storage', e);
-                showToast('Could not sync course list — check connection', false);
+                console.error('Failed to save shared courses:', e);
+                showToast('Course update not saved: ' + e.message, false);
+                return false;
             }
         }
 
@@ -1631,21 +1637,20 @@
 
         async function addCourse(name) {
             name = stripTrademark(name);
-            if (!name) return false;
-            const key = courseDedupeKey(name);
-            if (courses.some(c => courseDedupeKey(c) === key)) return false;
+            if (!name || courses.some(c => courseDedupeKey(c) === courseDedupeKey(name))) return false;
+            const old = [...courses];
             courses.push(name);
             courses.sort();
-            await saveCourses();
+            if (!await saveCourses()) { courses = old; return false; }
             renderCourseDropdown();
             return true;
         }
 
         async function deleteCourse(name) {
-            const index = courses.indexOf(name);
-            if (index === -1) return false;
-            courses.splice(index, 1);
-            await saveCourses();
+            if (!courses.includes(name)) return false;
+            const old = [...courses];
+            courses = courses.filter(c => c !== name);
+            if (!await saveCourses()) { courses = old; return false; }
             renderCourseDropdown();
             return true;
         }
@@ -1654,62 +1659,80 @@
         // SALES PERSONS MANAGEMENT (SHARED storage — live for everyone)
         // ============================================
         let salesPersons = [];
-        let selectedRegionValue = "";
+        let selectedRegionValue = '';
+        let salesLastChange = '';
 
-        function defaultSalesPersons() {
-            return [
-                { id: Date.now() + 1, name: "Vidya", region: "india" },
-                { id: Date.now() + 2, name: "Yash", region: "india" },
-                { id: Date.now() + 3, name: "Sunil", region: "india" },
-                { id: Date.now() + 4, name: "Abhishek", region: "india" },
-                { id: Date.now() + 5, name: "Akhilesh", region: "mea" },
-                { id: Date.now() + 6, name: "Sampoorna", region: "usa" },
-                { id: Date.now() + 7, name: "Ahamed", region: "usa" },
-                { id: Date.now() + 8, name: "Vaibhav", region: "usa" },
-                { id: Date.now() + 9, name: "Debendra", region: "usa" }
-            ];
+        function setSalesSyncStatus(message, isError = false) {
+            const el = document.getElementById('salesSyncStatus');
+            if (!el) return;
+            el.textContent = message;
+            el.style.color = isError ? '#b42318' : '#2b6b3b';
         }
 
+        // Always fetch authoritative data. No browser can re-seed a deleted name.
         async function loadSalesData() {
             try {
-                const result = await sharedStorage.get('salesPersons');
-                if (result && result.value) {
-                    salesPersons = JSON.parse(result.value);
-                } else {
-                    salesPersons = defaultSalesPersons();
-                    await saveSalesData();
+                const res = await fetch(SALES_API, { cache: 'no-store' });
+                if (!res.ok) throw new Error(await apiErrorMessage(res));
+                const data = await res.json();
+                if (!Array.isArray(data.salesPersons)) throw new Error('Invalid shared sales list');
+                salesLastChange = data.updatedAt || '';
+                const old = JSON.stringify(salesPersons);
+                salesPersons = data.salesPersons;
+                if (old !== JSON.stringify(salesPersons)) {
+                    refreshSalesDropdown();
+                    const modalOpen = document.getElementById('salesManagerModal').style.display === 'flex';
+                    // Do not discard in-progress typing in the Add Sales Person field.
+                    if (modalOpen && document.activeElement?.id !== 'newSalesName') renderSalesManagerContent();
                 }
+                setSalesSyncStatus('🟢 LIVE · Shared with all visitors · auto-updates every 15 seconds');
+                return true;
             } catch (e) {
-                console.error('Could not load shared sales persons', e);
-                if (salesPersons.length === 0) salesPersons = defaultSalesPersons();
-            }
-            refreshSalesDropdown();
-        }
-
-        async function saveSalesData() {
-            try {
-                const result = await sharedStorage.set('salesPersons', JSON.stringify(salesPersons));
-                if (!result) console.error('Sales save returned no result');
-            } catch (e) {
-                console.error('Failed to save sales persons to shared storage', e);
-                showToast('Could not sync sales list — check connection', false);
+                console.error('Could not sync shared sales persons:', e);
+                setSalesSyncStatus('⚠️ Sales list unavailable — check Netlify function', true);
+                return false;
             }
         }
 
         function refreshSalesDropdown() {
-            const salesDropdown = document.getElementById('sales');
-            if (!salesDropdown) return;
-            const previousValue = salesDropdown.value;
-            let html = '<option value="">Select Sales Person</option>';
-            salesPersons.forEach(p => {
-                const regionText = p.region === 'india' ? ' (India)' : (p.region === 'mea' ? ' (MEA)' : ' (USA)');
-                html += `<option value="${escapeHtml(p.name)}|${p.id}">${escapeHtml(p.name)}${regionText}</option>`;
+            const dropdown = document.getElementById('sales');
+            if (!dropdown) return;
+            const previousValue = dropdown.value;
+            dropdown.innerHTML = '<option value="">Select Sales Person</option>';
+            salesPersons.forEach(person => {
+                const option = document.createElement('option');
+                option.value = `${person.name}|${person.id}`;
+                option.textContent = person.name +
+                    (person.region === 'india' ? ' (India/APAC)' : person.region === 'mea' ? ' (MEA/Europe)' : ' (USA)');
+                dropdown.appendChild(option);
             });
-            salesDropdown.innerHTML = html;
-            // Preserve the current selection if it still exists (used by the live-refresh poller)
-            if (previousValue && [...salesDropdown.options].some(o => o.value === previousValue)) {
-                salesDropdown.value = previousValue;
+            if (previousValue && [...dropdown.options].some(o => o.value === previousValue)) {
+                dropdown.value = previousValue;
+            } else if (previousValue) {
+                dropdown.value = '';
+                selectedRegionValue = '';
+                document.getElementById('regionDisplay').style.display = 'none';
+                autoGenerateTemplate();
             }
+        }
+
+        async function sendSalesChange(payload) {
+            const password = promptForManagementPassword();
+            if (!password) return null;
+            const res = await fetch(SALES_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) throw new Error(await apiErrorMessage(res));
+            const data = await res.json();
+            if (!Array.isArray(data.salesPersons)) throw new Error('The backend returned an invalid list');
+            salesPersons = data.salesPersons;
+            salesLastChange = data.updatedAt || '';
+            refreshSalesDropdown();
+            renderSalesManagerContent();
+            setSalesSyncStatus('🟢 LIVE · Saved for every visitor');
+            return data;
         }
 
         async function addSalesPerson() {
@@ -1718,36 +1741,26 @@
             const addBtn = document.querySelector('#salesManagerBody .add-btn');
             const name = nameInput.value.trim();
             const region = regionInput.value;
-            if (!name) {
-                showToast('Please enter name', false);
-                return;
-            }
+            if (!name) return showToast('Please enter a name', false);
             if (addBtn) addBtn.disabled = true;
-            const newId = Date.now();
-            salesPersons.push({ id: newId, name: name, region: region });
-            await saveSalesData();
-            refreshSalesDropdown();
-            renderSalesManagerContent();
-            showToast(`${name} added successfully!`, true);
+            try {
+                const result = await sendSalesChange({ action: 'add', name, region });
+                if (result) showToast(`${name} added for everyone!`, true);
+            } catch (e) {
+                showToast('Sales person not added: ' + e.message, false);
+            } finally {
+                if (addBtn && addBtn.isConnected) addBtn.disabled = false;
+            }
         }
 
         async function deleteSalesPerson(id) {
-            const person = salesPersons.find(p => p.id === id);
-            if (!person) return;
-            if (confirm(`Delete "${person.name}"?`)) {
-                salesPersons = salesPersons.filter(p => p.id !== id);
-                await saveSalesData();
-                refreshSalesDropdown();
-                const salesDropdown = document.getElementById('sales');
-                const selectedVal = salesDropdown.value;
-                if (selectedVal.includes(person.name)) {
-                    salesDropdown.value = '';
-                    document.getElementById('regionDisplay').style.display = 'none';
-                    selectedRegionValue = '';
-                    autoGenerateTemplate();
-                }
-                renderSalesManagerContent();
-                showToast(`${person.name} deleted`, true);
+            const person = salesPersons.find(p => String(p.id) === String(id));
+            if (!person || !confirm(`Remove "${person.name}" for ALL website users?`)) return;
+            try {
+                const result = await sendSalesChange({ action: 'delete', id: person.id });
+                if (result) showToast(`${person.name} removed for everyone!`, true);
+            } catch (e) {
+                showToast('Sales person not removed: ' + e.message, false);
             }
         }
 
@@ -1757,27 +1770,20 @@
             const indiaCount = salesPersons.filter(p => p.region === 'india').length;
             const meaCount = salesPersons.filter(p => p.region === 'mea').length;
             const usaCount = salesPersons.filter(p => p.region === 'usa').length;
-            let salesListHtml = '';
-            if (salesPersons.length === 0) {
-                salesListHtml = '<div style="padding:40px; text-align:center; color:#999;">No sales persons added</div>';
-            } else {
-                salesPersons.forEach((person) => {
-                    let regionClass = person.region === 'india' ? 'region-india' : (person.region === 'mea' ? 'region-mea' : 'region-usa');
-                    let regionText = person.region === 'india' ? 'India/APAC' : (person.region === 'mea' ? 'MEA/Europe' : 'USA');
-                    salesListHtml += `
-                        <div class="sales-row">
-                            <div><strong>${escapeHtml(person.name)}</strong></div>
-                            <div><span class="region-badge ${regionClass}">${regionText}</span></div>
-                            <div><button class="delete-sales-btn" onclick="deleteSalesPerson(${person.id})">Delete</button></div>
-                        </div>
-                    `;
-                });
-            }
+            const rows = salesPersons.length ? salesPersons.map(person => {
+                const regionClass = person.region === 'india' ? 'region-india' : (person.region === 'mea' ? 'region-mea' : 'region-usa');
+                const regionText = person.region === 'india' ? 'India/APAC' : person.region === 'mea' ? 'MEA/Europe' : 'USA';
+                return `<div class="sales-row">
+                    <div><strong>${escapeHtml(person.name)}</strong></div>
+                    <div><span class="region-badge ${regionClass}">${regionText}</span></div>
+                    <div><button class="delete-sales-btn" onclick='deleteSalesPerson(${JSON.stringify(person.id)})'>Delete</button></div>
+                </div>`;
+            }).join('') : '<div style="padding:25px;text-align:center;color:#667085">No sales persons currently available</div>';
             container.innerHTML = `
                 <div class="add-sales-section">
-                    <h4>➕ Add New Sales Person</h4>
+                    <h4>➕ Add New Sales Person (shared for everyone)</h4>
                     <div class="form-row">
-                        <input type="text" id="newSalesName" placeholder="Enter name">
+                        <input type="text" id="newSalesName" placeholder="Enter name" maxlength="90">
                         <select id="newSalesRegion">
                             <option value="india">India/APAC</option>
                             <option value="mea">MEA/Europe</option>
@@ -1785,37 +1791,22 @@
                         </select>
                     </div>
                     <button class="add-btn" onclick="addSalesPerson()">Add Sales Person</button>
+                    <p style="font-size:12px;color:#667085;margin-top:10px">Only admins can add or delete. All visitors see the updated list automatically.</p>
                 </div>
-                <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
-                    <div style="flex:1; background: #f0f7ff; padding: 12px; border-radius: 12px; text-align: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #0078d4;">${totalSales}</div>
-                        <div style="font-size: 11px;">Total Sales</div>
-                    </div>
-                    <div style="flex:1; background: #e3f2fd; padding: 12px; border-radius: 12px; text-align: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #1976d2;">${indiaCount}</div>
-                        <div style="font-size: 11px;">India/APAC</div>
-                    </div>
-                    <div style="flex:1; background: #fff3e0; padding: 12px; border-radius: 12px; text-align: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #f57c00;">${meaCount}</div>
-                        <div style="font-size: 11px;">MEA/Europe</div>
-                    </div>
-                    <div style="flex:1; background: #e8f5e9; padding: 12px; border-radius: 12px; text-align: center;">
-                        <div style="font-size: 24px; font-weight: bold; color: #388e3c;">${usaCount}</div>
-                        <div style="font-size: 11px;">USA</div>
-                    </div>
+                <div class="visitor-stats" style="margin-bottom:18px">
+                    <div class="stat-card"><div class="stat-number">${totalSales}</div><div class="stat-label">Total</div></div>
+                    <div class="stat-card"><div class="stat-number">${indiaCount}</div><div class="stat-label">India/APAC</div></div>
+                    <div class="stat-card"><div class="stat-number">${meaCount}</div><div class="stat-label">MEA/Europe</div></div>
+                    <div class="stat-card"><div class="stat-number">${usaCount}</div><div class="stat-label">USA</div></div>
                 </div>
-                <h4 style="margin-bottom:10px;">📋 Current Sales Persons</h4>
-                <div class="sales-list-header">
-                    <div>Name</div>
-                    <div>Region</div>
-                    <div>Action</div>
-                </div>
-                <div class="sales-list-container">${salesListHtml}</div>
+                <h4 style="margin-bottom:10px">📋 Live Sales Persons</h4>
+                <div class="sales-list-header"><div>Name</div><div>Region</div><div>Action</div></div>
+                <div class="sales-list-container">${rows}</div>
             `;
         }
 
         async function openSalesManager() {
-            await loadSalesData(); // pull latest shared data before showing the manager
+            await loadSalesData();
             renderSalesManagerContent();
             document.getElementById('salesManagerModal').style.display = 'flex';
         }
@@ -1905,7 +1896,7 @@
                 showToast('Course already exists!', false);
                 return;
             }
-            await addCourse(name);
+            if (!await addCourse(name)) return;
             input.value = '';
             const searchBox = document.getElementById('courseSearchFilter');
             const currentFilter = searchBox ? searchBox.value : '';
@@ -1915,7 +1906,7 @@
 
         async function deleteCourseFromManager(name) {
             if (!confirm(`Delete course: "${name}"?`)) return;
-            await deleteCourse(name);
+            if (!await deleteCourse(name)) return;
             const searchBox = document.getElementById('courseSearchFilter');
             const currentFilter = searchBox ? searchBox.value : '';
             renderCoursesManagerContent(currentFilter);
@@ -1948,17 +1939,7 @@
                     }
                 } catch (e) { /* ignore transient errors */ }
 
-                try {
-                    const result = await sharedStorage.get('salesPersons');
-                    if (result && result.value) {
-                        const latest = JSON.parse(result.value);
-                        if (JSON.stringify(latest) !== JSON.stringify(salesPersons)) {
-                            salesPersons = latest;
-                            refreshSalesDropdown();
-                            if (salesModalOpen) renderSalesManagerContent();
-                        }
-                    }
-                } catch (e) { /* ignore transient errors */ }
+                await loadSalesData();
 
                 // Auto-synced individual courses (from simpliaxis.com) are no
                 // longer pulled into the Select Course dropdown — intentionally
@@ -1999,20 +1980,20 @@
         // ============================================
         let isAdminAuthenticated = false;
 
-        function openAdminLogs() {
-            if (!isAdminAuthenticated) {
-                const password = prompt("Enter Admin Password to view IP Logs:");
-                if (password === ADMIN_PASSWORD) {
-                    isAdminAuthenticated = true;
-                    renderAdminLogsContent();
-                    document.getElementById('adminLogsModal').style.display = 'flex';
-                } else if (password !== null) {
-                    alert("Incorrect password!");
-                }
-            } else {
+        async function openAdminLogs() {
+            // Password verification occurs on the Netlify backend.
+            const password = promptForManagementPassword();
+            if (!password) return;
+            try {
+                const res = await fetch(SALES_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
+                    body: JSON.stringify({ action: 'verify' })
+                });
+                if (!res.ok) throw new Error(await apiErrorMessage(res));
                 renderAdminLogsContent();
                 document.getElementById('adminLogsModal').style.display = 'flex';
-            }
+            } catch (e) { showToast('Admin verification failed: ' + e.message, false); }
         }
 
         function getFlagEmoji(countryCode) {
@@ -2074,7 +2055,7 @@
                     </div>
                 </div>
                 <div class="visitor-table-container"><table class="visitor-table"><thead><tr><th>🌍</th><th>Country</th><th>IP Address</th><th>First Visit</th><th>Last Visit</th><th>Visits</th></tr></thead><tbody>${tableRows}</tbody></table></div>
-                <div style="margin-top:15px; padding:10px; background:#f8f9fa; border-radius:8px; font-size:11px; text-align:center;">🔐 Password: <strong>${ADMIN_PASSWORD}</strong></div>
+                <div style="margin-top:15px; padding:10px; background:#f8f9fa; border-radius:8px; font-size:11px; text-align:center;">Admin passwords are verified server-side for shared list changes.</div>
             `;
         }
 
@@ -2286,8 +2267,8 @@
                 autoGenerateTemplate();
                 return;
             }
-            const salesId = parseInt(salesValue.split('|')[1]);
-            const selected = salesPersons.find(p => p.id === salesId);
+            const salesId = salesValue.split('|')[1];
+            const selected = salesPersons.find(p => String(p.id) === String(salesId));
             if (selected) {
                 selectedRegionValue = selected.region;
                 let regionText = selected.region === "india" ? "India / APC Region" : (selected.region === "mea" ? "MEA / Europe Region" : "USA Region");
